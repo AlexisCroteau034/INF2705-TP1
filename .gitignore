@@ -1,2 +1,2 @@
-build/
-imgui.ini
+src/build/
+src/imgui.ini
