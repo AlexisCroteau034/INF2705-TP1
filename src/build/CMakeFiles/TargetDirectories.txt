@@ -1,3 +1,0 @@
-/home/tec34/Documents/Poly/INF2705/TP1/src/build/CMakeFiles/TP.dir
-/home/tec34/Documents/Poly/INF2705/TP1/src/build/CMakeFiles/edit_cache.dir
-/home/tec34/Documents/Poly/INF2705/TP1/src/build/CMakeFiles/rebuild_cache.dir
