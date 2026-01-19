@@ -1,0 +1,56 @@
+[
+{
+  "directory": "/home/tec34/Documents/Poly/INF2705/TP1/src/build",
+  "command": "/usr/bin/c++ -DGLBINDING_AUX_STATIC_DEFINE -DGLBINDING_STATIC_DEFINE -DSFML_STATIC -DSYSTEM_LINUX -I/home/tec34/Documents/Poly/INF2705/TP1/src/.. -isystem /home/tec34/vcpkg/installed/x64-linux/include  -std=c++20 -fsigned-char -Wno-unknown-pragmas -Wno-enum-compare -D GLM_FORCE_SWIZZLE -D GLM_FORCE_INTRINSICS -g -o CMakeFiles/TP.dir/main.cpp.o -c /home/tec34/Documents/Poly/INF2705/TP1/src/main.cpp",
+  "file": "/home/tec34/Documents/Poly/INF2705/TP1/src/main.cpp",
+  "output": "CMakeFiles/TP.dir/main.cpp.o"
+},
+{
+  "directory": "/home/tec34/Documents/Poly/INF2705/TP1/src/build",
+  "command": "/usr/bin/c++ -DGLBINDING_AUX_STATIC_DEFINE -DGLBINDING_STATIC_DEFINE -DSFML_STATIC -DSYSTEM_LINUX -I/home/tec34/Documents/Poly/INF2705/TP1/src/.. -isystem /home/tec34/vcpkg/installed/x64-linux/include  -std=c++20 -fsigned-char -Wno-unknown-pragmas -Wno-enum-compare -D GLM_FORCE_SWIZZLE -D GLM_FORCE_INTRINSICS -g -o CMakeFiles/TP.dir/model.cpp.o -c /home/tec34/Documents/Poly/INF2705/TP1/src/model.cpp",
+  "file": "/home/tec34/Documents/Poly/INF2705/TP1/src/model.cpp",
+  "output": "CMakeFiles/TP.dir/model.cpp.o"
+},
+{
+  "directory": "/home/tec34/Documents/Poly/INF2705/TP1/src/build",
+  "command": "/usr/bin/c++ -DGLBINDING_AUX_STATIC_DEFINE -DGLBINDING_STATIC_DEFINE -DSFML_STATIC -DSYSTEM_LINUX -I/home/tec34/Documents/Poly/INF2705/TP1/src/.. -isystem /home/tec34/vcpkg/installed/x64-linux/include  -std=c++20 -fsigned-char -Wno-unknown-pragmas -Wno-enum-compare -D GLM_FORCE_SWIZZLE -D GLM_FORCE_INTRINSICS -g -o CMakeFiles/TP.dir/car.cpp.o -c /home/tec34/Documents/Poly/INF2705/TP1/src/car.cpp",
+  "file": "/home/tec34/Documents/Poly/INF2705/TP1/src/car.cpp",
+  "output": "CMakeFiles/TP.dir/car.cpp.o"
+},
+{
+  "directory": "/home/tec34/Documents/Poly/INF2705/TP1/src/build",
+  "command": "/usr/bin/c++ -DGLBINDING_AUX_STATIC_DEFINE -DGLBINDING_STATIC_DEFINE -DSFML_STATIC -DSYSTEM_LINUX -I/home/tec34/Documents/Poly/INF2705/TP1/src/.. -isystem /home/tec34/vcpkg/installed/x64-linux/include  -std=c++20 -fsigned-char -Wno-unknown-pragmas -Wno-enum-compare -D GLM_FORCE_SWIZZLE -D GLM_FORCE_INTRINSICS -g -o CMakeFiles/TP.dir/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui.cpp.o -c /home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui.cpp",
+  "file": "/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui.cpp",
+  "output": "CMakeFiles/TP.dir/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui.cpp.o"
+},
+{
+  "directory": "/home/tec34/Documents/Poly/INF2705/TP1/src/build",
+  "command": "/usr/bin/c++ -DGLBINDING_AUX_STATIC_DEFINE -DGLBINDING_STATIC_DEFINE -DSFML_STATIC -DSYSTEM_LINUX -I/home/tec34/Documents/Poly/INF2705/TP1/src/.. -isystem /home/tec34/vcpkg/installed/x64-linux/include  -std=c++20 -fsigned-char -Wno-unknown-pragmas -Wno-enum-compare -D GLM_FORCE_SWIZZLE -D GLM_FORCE_INTRINSICS -g -o CMakeFiles/TP.dir/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_demo.cpp.o -c /home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_demo.cpp",
+  "file": "/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_demo.cpp",
+  "output": "CMakeFiles/TP.dir/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_demo.cpp.o"
+},
+{
+  "directory": "/home/tec34/Documents/Poly/INF2705/TP1/src/build",
+  "command": "/usr/bin/c++ -DGLBINDING_AUX_STATIC_DEFINE -DGLBINDING_STATIC_DEFINE -DSFML_STATIC -DSYSTEM_LINUX -I/home/tec34/Documents/Poly/INF2705/TP1/src/.. -isystem /home/tec34/vcpkg/installed/x64-linux/include  -std=c++20 -fsigned-char -Wno-unknown-pragmas -Wno-enum-compare -D GLM_FORCE_SWIZZLE -D GLM_FORCE_INTRINSICS -g -o CMakeFiles/TP.dir/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_draw.cpp.o -c /home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_draw.cpp",
+  "file": "/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_draw.cpp",
+  "output": "CMakeFiles/TP.dir/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_draw.cpp.o"
+},
+{
+  "directory": "/home/tec34/Documents/Poly/INF2705/TP1/src/build",
+  "command": "/usr/bin/c++ -DGLBINDING_AUX_STATIC_DEFINE -DGLBINDING_STATIC_DEFINE -DSFML_STATIC -DSYSTEM_LINUX -I/home/tec34/Documents/Poly/INF2705/TP1/src/.. -isystem /home/tec34/vcpkg/installed/x64-linux/include  -std=c++20 -fsigned-char -Wno-unknown-pragmas -Wno-enum-compare -D GLM_FORCE_SWIZZLE -D GLM_FORCE_INTRINSICS -g -o CMakeFiles/TP.dir/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_impl_opengl3.cpp.o -c /home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_impl_opengl3.cpp",
+  "file": "/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_impl_opengl3.cpp",
+  "output": "CMakeFiles/TP.dir/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_impl_opengl3.cpp.o"
+},
+{
+  "directory": "/home/tec34/Documents/Poly/INF2705/TP1/src/build",
+  "command": "/usr/bin/c++ -DGLBINDING_AUX_STATIC_DEFINE -DGLBINDING_STATIC_DEFINE -DSFML_STATIC -DSYSTEM_LINUX -I/home/tec34/Documents/Poly/INF2705/TP1/src/.. -isystem /home/tec34/vcpkg/installed/x64-linux/include  -std=c++20 -fsigned-char -Wno-unknown-pragmas -Wno-enum-compare -D GLM_FORCE_SWIZZLE -D GLM_FORCE_INTRINSICS -g -o CMakeFiles/TP.dir/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_tables.cpp.o -c /home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_tables.cpp",
+  "file": "/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_tables.cpp",
+  "output": "CMakeFiles/TP.dir/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_tables.cpp.o"
+},
+{
+  "directory": "/home/tec34/Documents/Poly/INF2705/TP1/src/build",
+  "command": "/usr/bin/c++ -DGLBINDING_AUX_STATIC_DEFINE -DGLBINDING_STATIC_DEFINE -DSFML_STATIC -DSYSTEM_LINUX -I/home/tec34/Documents/Poly/INF2705/TP1/src/.. -isystem /home/tec34/vcpkg/installed/x64-linux/include  -std=c++20 -fsigned-char -Wno-unknown-pragmas -Wno-enum-compare -D GLM_FORCE_SWIZZLE -D GLM_FORCE_INTRINSICS -g -o CMakeFiles/TP.dir/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_widgets.cpp.o -c /home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_widgets.cpp",
+  "file": "/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_widgets.cpp",
+  "output": "CMakeFiles/TP.dir/home/tec34/Documents/Poly/INF2705/TP1/imgui/imgui_widgets.cpp.o"
+}
+]
