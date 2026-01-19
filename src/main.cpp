@@ -65,6 +65,8 @@ struct App : public OpenGLApplication
 		// Config de base.
 		
 		// TODO: Initialisez la couleur de fond.
+        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
        
         // TODO: Partie 2: Activez le test de profondeur (GL_DEPTH_TEST) et
         //       l'élimination des faces arrières (GL_CULL_FACE).
