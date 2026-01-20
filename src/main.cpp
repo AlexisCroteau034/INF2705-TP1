@@ -34,7 +34,7 @@ using namespace glm;
 // struct ... { ... };
 
 struct Vertex {
-    vec2 position;
+    vec3 position;
     vec3 color;
 };
 
@@ -287,14 +287,19 @@ struct App : public OpenGLApplication
         GLuint shaderVS = loadShaderObject(GL_VERTEX_SHADER, BASIC_VERTEX_SRC_PATH);
         GLuint shaderFS = loadShaderObject(GL_FRAGMENT_SHADER, BASIC_FRAGMENT_SRC_PATH);
 
-        GLuint shaderProgram = glCreateProgram();
+        basicSP_ = glCreateProgram();
 
-        glAttachShader(shaderProgram, shaderVS);
+        glAttachShader(basicSP_, shaderVS);
 
-        glAttachShader(shaderProgram, shaderFS);
+        glAttachShader(basicSP_, shaderFS);
 
-        glLinkProgram(shaderProgram);
-        checkProgramLinkingError("shaderProgram", shaderProgram);
+        glLinkProgram(basicSP_);
+        checkProgramLinkingError("basicSP_", basicSP_);
+
+        glDetachShader(basicSP_, shaderVS);
+        glDetachShader(basicSP_, shaderFS);
+        glDeleteShader(shaderVS);
+        glDeleteShader(shaderFS);
         
         // TODO: Allez chercher les locations de vos variables uniform dans le shader
         //       pour initialiser mvpUniformLocation_ et car_.mvpUniformLocation,
@@ -320,10 +325,32 @@ struct App : public OpenGLApplication
         //       on demande seulement de faire l'allocation de buffers suffisamment gros
         //       pour contenir le polygone durant toute l'exécution du programme.
         //       Réfléchissez bien à l'usage des buffers (paramètre de glBufferData).
-    
+
         // TODO: Créez un vao et spécifiez le format des données dans celui-ci.
         //       N'oubliez pas de lier le ebo avec le vao et de délier le vao
         //       du contexte pour empêcher des modifications sur celui-ci.
+
+        glGenVertexArrays(1, &vao_);
+
+        glGenBuffers(1, &vbo_);
+        glGenBuffers(1, &ebo_);
+
+        glBindVertexArray(vao_);
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_), vertices_, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements_), elements_, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+
+        glBindVertexArray(0);
     }
     
     void sceneShape()
