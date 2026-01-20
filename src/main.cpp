@@ -77,6 +77,14 @@ struct App : public OpenGLApplication
                 
         loadShaderPrograms();
         
+        vertices_[0].position = {-0.5, -0.5, 1.0};
+        vertices_[1].position = {0.5, -0.5, 1.0};
+        vertices_[2].position = {0.0, 0.5, 1.0};
+
+        vertices_[0].color = {1.0, 0.0, 0.0};
+        vertices_[1].color = {0.0, 1.0, 0.0};
+        vertices_[2].color = {0.0, 0.0, 1.0};
+        
         // Partie 1
         initShapeData();
         
@@ -84,6 +92,7 @@ struct App : public OpenGLApplication
         loadModels();
         
         // TODO: Insérez les initialisations supplémentaires ici au besoin.
+       
 	}
 	
 	    
@@ -140,6 +149,10 @@ struct App : public OpenGLApplication
 	void onClose() override
 	{
 	    // TODO: Libérez les ressources allouées (buffers, shaders, etc.).
+        glDeleteVertexArrays(1, &vao_);
+        glDeleteBuffers(1, &vbo_);
+        glDeleteBuffers(1, &ebo_);
+        glDeleteProgram(basicSP_);
 	}
 
 	// Appelée lors d'une touche de clavier.
@@ -345,7 +358,7 @@ struct App : public OpenGLApplication
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements_), elements_, GL_STATIC_DRAW);
 
-        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
@@ -373,6 +386,10 @@ struct App : public OpenGLApplication
         }
         
         // TODO: Dessin du polygone.
+        glUseProgram(basicSP_);
+
+        glBindVertexArray(vao_);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
     }
     
     void drawStreetlights(glm::mat4& projView)
