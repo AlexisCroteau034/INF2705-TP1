@@ -248,8 +248,17 @@ struct App : public OpenGLApplication
         //       Utilisez readFile pour lire le fichier.
         //       N'oubliez pas de vérifier les erreurs suite à la compilation
         //       avec la méthode App::checkShaderCompilingError.
-        
-        return 0;
+
+        std::string shaderSource = readFile(path);
+        auto src = shaderSource.c_str();
+
+        GLuint shader = glCreateShader(type);
+        glShaderSource(shader, 1, &src, nullptr);
+        glCompileShader(shader);
+
+        checkShaderCompilingError(path, shader);
+
+        return shader;
     }
     
     void loadShaderPrograms()
@@ -269,6 +278,18 @@ struct App : public OpenGLApplication
         // Partie 2
         const char* TRANSFORM_VERTEX_SRC_PATH = "./shaders/transform.vs.glsl";
         const char* TRANSFORM_FRAGMENT_SRC_PATH = "./shaders/transform.fs.glsl";
+
+        GLuint shaderVS = loadShaderObject(GL_VERTEX_SHADER, BASIC_VERTEX_SRC_PATH);
+        GLuint shaderFS = loadShaderObject(GL_FRAGMENT_SHADER, BASIC_FRAGMENT_SRC_PATH);
+
+        GLuint shaderProgram = glCreateProgram();
+
+        glAttachShader(shaderProgram, shaderVS);
+
+        glAttachShader(shaderProgram, shaderFS);
+
+        glLinkProgram(shaderProgram);
+        checkProgramLinkingError("shaderProgram", shaderProgram);
         
         // TODO: Allez chercher les locations de vos variables uniform dans le shader
         //       pour initialiser mvpUniformLocation_ et car_.mvpUniformLocation,
