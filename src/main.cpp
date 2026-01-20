@@ -33,6 +33,11 @@ using namespace glm;
 //       Un format entrelacé est recommandé (ordonné par vertex au lieu par attribut).
 // struct ... { ... };
 
+struct Vertex {
+    vec2 position;
+    vec3 color;
+};
+
 struct App : public OpenGLApplication
 {
     App()
@@ -44,7 +49,7 @@ struct App : public OpenGLApplication
     , isMouseMotionEnabled_(false)
     {
     }
-	
+
 	void init() override
 	{
 		// Le message expliquant les touches de clavier.
@@ -453,8 +458,8 @@ private:
     static constexpr unsigned int MAX_N_SIDES = 12;
     
     // TODO: Modifiez les types de vertices_ et elements_ pour votre besoin.
-    //  vertices_[MAX_N_SIDES + 1];
-    //  elements_[MAX_N_SIDES * 3];
+    Vertex vertices_[MAX_N_SIDES + 1];
+    GLuint elements_[MAX_N_SIDES * 3];
     
     int nSide_, oldNSide_;
     
