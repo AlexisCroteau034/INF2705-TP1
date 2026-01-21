@@ -325,7 +325,7 @@ struct App : public OpenGLApplication
         //       puis colorModUniformLocation_ et car_.colorModUniformLocation.
     }
     
-    void generateNgon(int nSides)
+    void generateNgon()
     {
         // TODO: Générez un polygone à N côtés (couramment appelé N-gon).
         //       Vous devez gérer les cas entre 5 et 12 côtés (pentagone, hexagone
@@ -334,9 +334,11 @@ struct App : public OpenGLApplication
         //       Vous devez minimiser le nombre de points et définir des indices
         //       pour permettre la réutilisation.
         const float RADIUS = 0.7f;
-        // Color color = { 1.0f, 0.0f, 0.0f, 1.0f };
-        // vertices_[0] = { .pos = { RADIUS, 0.0f }, .color = color };
-        // for (int i = 0; i < nSides * 3; i++)
+        int offset = 0;
+        for (int i = 0; i < nSide_; i++)
+        {
+            addTriangleToNgon(offset, i);
+        }
     }
 
     void addTriangleToNgon(int &offset, int i)
@@ -361,13 +363,6 @@ struct App : public OpenGLApplication
         //       on demande seulement de faire l'allocation de buffers suffisamment gros
         //       pour contenir le polygone durant toute l'exécution du programme.
         //       Réfléchissez bien à l'usage des buffers (paramètre de glBufferData).
-        nSide_ = 8;
-        // const float RADIUS = 0.7f;
-        int offset = 0;
-        for (int i = 0; i < nSide_; i++)
-        {
-            addTriangleToNgon(offset, i);
-        }
 
         glGenVertexArrays(1, &vao_);
         glGenBuffers(1, &vbo_);
@@ -406,10 +401,13 @@ struct App : public OpenGLApplication
             //       Ici, il faut envoyer les données à jour au GPU.
             //       Attention, il ne faut pas faire d'allocation/réallocation, on veut
             //       seulement mettre à jour les buffers actuels.
+            generateNgon();
+            glUseProgram(basicSP_);
+            glBindVertexArray(vao_);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices_), vertices_);
         }
         // TODO: Dessin du polygone.
-        glUseProgram(basicSP_);
-        glBindVertexArray(vao_);
         glDrawArrays(GL_TRIANGLES, 0, nSide_ * 3);
     }
     
@@ -524,7 +522,7 @@ private:
     
     // TODO: Modifiez les types de vertices_ et elements_ pour votre besoin.
     //Vertex vertices_[MAX_N_SIDES + 1];
-    Vertex vertices_[100];
+    Vertex vertices_[MAX_N_SIDES * 3];
     // GLfloat elements_[MAX_N_SIDES * 3];
     
     int nSide_, oldNSide_;
