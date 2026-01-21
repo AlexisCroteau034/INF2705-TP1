@@ -33,6 +33,30 @@ using namespace glm;
 //       Un format entrelacé est recommandé (ordonné par vertex au lieu par attribut).
 // struct ... { ... };
 
+struct Pos
+{
+    GLfloat x;
+    GLfloat y;
+};
+
+struct Color
+{
+    GLfloat r;
+    GLfloat g;
+    GLfloat b;
+    GLfloat a;
+};
+
+struct Vertex 
+{
+    Pos pos;
+    Color color;
+};
+
+constexpr uint8_t N_VALUES_PER_VERTEX = sizeof(Vertex) / sizeof(GLfloat);
+constexpr uint8_t N_VALUES_PER_POS = sizeof(Pos) / sizeof(GLfloat);
+constexpr uint8_t N_VALUES_PER_COLOR = sizeof(Color) / sizeof(GLfloat);
+
 struct App : public OpenGLApplication
 {
     App()
@@ -65,7 +89,7 @@ struct App : public OpenGLApplication
 		// Config de base.
 		
 		// TODO: Initialisez la couleur de fond.
-        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
        
         // TODO: Partie 2: Activez le test de profondeur (GL_DEPTH_TEST) et
@@ -117,6 +141,7 @@ struct App : public OpenGLApplication
 	void drawFrame() override
 	{
 	    // TODO: Nettoyage de la surface de dessin.
+        glClear(GL_COLOR_BUFFER_BIT);
 	    // TODO: Partie 2: Ajoutez le nettoyage du tampon de profondeur.
         
         ImGui::Begin("Scene Parameters");
@@ -247,8 +272,15 @@ struct App : public OpenGLApplication
         //       Utilisez readFile pour lire le fichier.
         //       N'oubliez pas de vérifier les erreurs suite à la compilation
         //       avec la méthode App::checkShaderCompilingError.
-        
-        return 0;
+		GLuint shader = glCreateShader(type);
+
+		std::string srcStd = readFile(path).c_str();
+        const char* srcC = srcStd.c_str();
+
+		glShaderSource(shader, 1, &srcC, nullptr);
+		glCompileShader(shader);
+		checkShaderCompilingError(path, shader);
+        return shader;
     }
     
     void loadShaderPrograms()
@@ -261,9 +293,26 @@ struct App : public OpenGLApplication
         //       Il est recommandé de détacher et de supprimer les shaders objects
         //       directement après la liaison.
         
+		basicSP_ = glCreateProgram();
+
         // Partie 1
         const char* BASIC_VERTEX_SRC_PATH = "./shaders/basic.vs.glsl";
+
         const char* BASIC_FRAGMENT_SRC_PATH = "./shaders/basic.fs.glsl";
+
+		GLuint vertexShader = loadShaderObject(GL_VERTEX_SHADER, BASIC_VERTEX_SRC_PATH);
+		GLuint fragmentShader = loadShaderObject(GL_FRAGMENT_SHADER, BASIC_FRAGMENT_SRC_PATH);
+		glAttachShader(basicSP_, vertexShader);
+		glAttachShader(basicSP_, fragmentShader);
+        
+        glLinkProgram(basicSP_);
+        
+        checkProgramLinkingError("basicSP_", basicSP_);
+
+        glDetachShader(basicSP_, vertexShader);
+        glDetachShader(basicSP_, fragmentShader);
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
         
         // Partie 2
         const char* TRANSFORM_VERTEX_SRC_PATH = "./shaders/transform.vs.glsl";
@@ -293,10 +342,27 @@ struct App : public OpenGLApplication
         //       on demande seulement de faire l'allocation de buffers suffisamment gros
         //       pour contenir le polygone durant toute l'exécution du programme.
         //       Réfléchissez bien à l'usage des buffers (paramètre de glBufferData).
-    
+        vertices_[0] = { .pos = { 0.5f, 0.0f }, .color = { 1.0f, 0.0f, 0.0f, 1.0f } };
+        vertices_[1] = { .pos = { -0.5f, 0.0f }, .color = { 0.0f, 1.0f, 0.0f, 1.0f } };
+        vertices_[2] = { .pos = { 0.0f, 0.866f }, .color = { 0.0f, 0.0f, 1.0f, 1.0f } };
+        glGenVertexArrays(1, &vao_);
+        glGenBuffers(1, &vbo_);
+
+        glBindVertexArray(vao_);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+
         // TODO: Créez un vao et spécifiez le format des données dans celui-ci.
         //       N'oubliez pas de lier le ebo avec le vao et de délier le vao
         //       du contexte pour empêcher des modifications sur celui-ci.
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_), vertices_, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, N_VALUES_PER_POS, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+        glEnableVertexAttribArray(0);
+
+        glVertexAttribPointer(1, N_VALUES_PER_COLOR, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) sizeof(Pos));
+        glEnableVertexAttribArray(1);
+
+        glBindVertexArray(0);
     }
     
     void sceneShape()
@@ -317,8 +383,10 @@ struct App : public OpenGLApplication
             //       Attention, il ne faut pas faire d'allocation/réallocation, on veut
             //       seulement mettre à jour les buffers actuels.
         }
-        
         // TODO: Dessin du polygone.
+        glUseProgram(basicSP_);
+        glBindVertexArray(vao_);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
     }
     
     void drawStreetlights(glm::mat4& projView)
@@ -431,8 +499,8 @@ private:
     static constexpr unsigned int MAX_N_SIDES = 12;
     
     // TODO: Modifiez les types de vertices_ et elements_ pour votre besoin.
-    //  vertices_[MAX_N_SIDES + 1];
-    //  elements_[MAX_N_SIDES * 3];
+    Vertex vertices_[MAX_N_SIDES + 1];
+    // GLfloat elements_[MAX_N_SIDES * 3];
     
     int nSide_, oldNSide_;
     
