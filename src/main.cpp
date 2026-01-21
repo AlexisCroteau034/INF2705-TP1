@@ -8,6 +8,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <numbers>
+#include <cmath>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -323,16 +325,33 @@ struct App : public OpenGLApplication
         //       puis colorModUniformLocation_ et car_.colorModUniformLocation.
     }
     
-    void generateNgon()
+    void generateNgon(int nSides)
     {
         // TODO: Générez un polygone à N côtés (couramment appelé N-gon).
         //       Vous devez gérer les cas entre 5 et 12 côtés (pentagone, hexagone
         //       , etc.). Ceux-ci ont un rayon constant de 0.7.
         //       Chaque point possède une couleur (libre au choix).
         //       Vous devez minimiser le nombre de points et définir des indices
-        //       pour permettre la réutilisation.        
-        
+        //       pour permettre la réutilisation.
         const float RADIUS = 0.7f;
+        // Color color = { 1.0f, 0.0f, 0.0f, 1.0f };
+        // vertices_[0] = { .pos = { RADIUS, 0.0f }, .color = color };
+        // for (int i = 0; i < nSides * 3; i++)
+    }
+
+    void addTriangleToNgon(int &offset, int i)
+    {
+        const float RADIUS = 0.7f;
+        const Color color = { 1.0f, 0.0f, 0.0f, 1.0f };
+        vertices_[offset++] = { .pos = { 0.0f, 0.0f }, .color = color };
+        float angle = 2 * std::numbers::pi * i / nSide_;
+        GLfloat x = RADIUS * std::sin(angle);
+        GLfloat y = RADIUS * std::cos(angle);
+        vertices_[offset++] = { .pos = { x, y }, .color = color };
+        angle = 2 * std::numbers::pi * (i + 1) / nSide_;
+        x = RADIUS * std::sin(angle);
+        y = RADIUS * std::cos(angle);
+        vertices_[offset++] = { .pos = { x, y }, .color = color };
     }
     
     void initShapeData()
@@ -342,9 +361,14 @@ struct App : public OpenGLApplication
         //       on demande seulement de faire l'allocation de buffers suffisamment gros
         //       pour contenir le polygone durant toute l'exécution du programme.
         //       Réfléchissez bien à l'usage des buffers (paramètre de glBufferData).
-        vertices_[0] = { .pos = { 0.5f, 0.0f }, .color = { 1.0f, 0.0f, 0.0f, 1.0f } };
-        vertices_[1] = { .pos = { -0.5f, 0.0f }, .color = { 0.0f, 1.0f, 0.0f, 1.0f } };
-        vertices_[2] = { .pos = { 0.0f, 0.866f }, .color = { 0.0f, 0.0f, 1.0f, 1.0f } };
+        nSide_ = 8;
+        // const float RADIUS = 0.7f;
+        int offset = 0;
+        for (int i = 0; i < nSide_; i++)
+        {
+            addTriangleToNgon(offset, i);
+        }
+
         glGenVertexArrays(1, &vao_);
         glGenBuffers(1, &vbo_);
 
@@ -386,7 +410,7 @@ struct App : public OpenGLApplication
         // TODO: Dessin du polygone.
         glUseProgram(basicSP_);
         glBindVertexArray(vao_);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_TRIANGLES, 0, nSide_ * 3);
     }
     
     void drawStreetlights(glm::mat4& projView)
@@ -499,7 +523,8 @@ private:
     static constexpr unsigned int MAX_N_SIDES = 12;
     
     // TODO: Modifiez les types de vertices_ et elements_ pour votre besoin.
-    Vertex vertices_[MAX_N_SIDES + 1];
+    //Vertex vertices_[MAX_N_SIDES + 1];
+    Vertex vertices_[100];
     // GLfloat elements_[MAX_N_SIDES * 3];
     
     int nSide_, oldNSide_;
