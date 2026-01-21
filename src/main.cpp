@@ -55,7 +55,6 @@ struct Vertex
     Color color;
 };
 
-constexpr uint8_t N_VALUES_PER_VERTEX = sizeof(Vertex) / sizeof(GLfloat);
 constexpr uint8_t N_VALUES_PER_POS = sizeof(Pos) / sizeof(GLfloat);
 constexpr uint8_t N_VALUES_PER_COLOR = sizeof(Color) / sizeof(GLfloat);
 
@@ -91,7 +90,7 @@ struct App : public OpenGLApplication
 		// Config de base.
 		
 		// TODO: Initialisez la couleur de fond.
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
        
         // TODO: Partie 2: Activez le test de profondeur (GL_DEPTH_TEST) et
@@ -161,6 +160,10 @@ struct App : public OpenGLApplication
 	void onClose() override
 	{
 	    // TODO: Libérez les ressources allouées (buffers, shaders, etc.).
+        glDeleteVertexArrays(1, &vao_);
+        glDeleteBuffers(1, &vbo_);
+        glDeleteBuffers(1, &ebo_);
+        glDeleteProgram(basicSP_);
 	}
 
 	// Appelée lors d'une touche de clavier.
@@ -299,21 +302,19 @@ struct App : public OpenGLApplication
 
         // Partie 1
         const char* BASIC_VERTEX_SRC_PATH = "./shaders/basic.vs.glsl";
-
         const char* BASIC_FRAGMENT_SRC_PATH = "./shaders/basic.fs.glsl";
 
 		GLuint vertexShader = loadShaderObject(GL_VERTEX_SHADER, BASIC_VERTEX_SRC_PATH);
-		GLuint fragmentShader = loadShaderObject(GL_FRAGMENT_SHADER, BASIC_FRAGMENT_SRC_PATH);
 		glAttachShader(basicSP_, vertexShader);
+		GLuint fragmentShader = loadShaderObject(GL_FRAGMENT_SHADER, BASIC_FRAGMENT_SRC_PATH);
 		glAttachShader(basicSP_, fragmentShader);
         
         glLinkProgram(basicSP_);
-        
         checkProgramLinkingError("basicSP_", basicSP_);
 
         glDetachShader(basicSP_, vertexShader);
-        glDetachShader(basicSP_, fragmentShader);
         glDeleteShader(vertexShader);
+        glDetachShader(basicSP_, fragmentShader);
         glDeleteShader(fragmentShader);
         
         // Partie 2
@@ -323,6 +324,16 @@ struct App : public OpenGLApplication
         // TODO: Allez chercher les locations de vos variables uniform dans le shader
         //       pour initialiser mvpUniformLocation_ et car_.mvpUniformLocation,
         //       puis colorModUniformLocation_ et car_.colorModUniformLocation.
+    }
+
+    Color generateVertexColor(int index)
+    {
+        static constexpr Color colors[3] = { 
+            { 1.0f, 0.0f, 0.0f, 1.0f },
+            { 0.0f, 1.0f, 0.0f, 1.0f },
+            { 0.0f, 0.0f, 1.0f, 1.0f } 
+        };
+        return colors[index % 3];
     }
     
     void generateNgon()
@@ -334,28 +345,23 @@ struct App : public OpenGLApplication
         //       Vous devez minimiser le nombre de points et définir des indices
         //       pour permettre la réutilisation.
         const float RADIUS = 0.7f;
-        int offset = 0;
         for (int i = 0; i < nSide_; i++)
         {
-            addTriangleToNgon(offset, i);
+            float angle = 2 * std::numbers::pi * i / nSide_;
+            vertices_[i] = { 
+                .pos = { RADIUS * std::sin(angle), RADIUS * std::cos(angle) },
+                .color = generateVertexColor(i) 
+            };
+        }
+        vertices_[nSide_] = { .pos = { 0.0f, 0.0f }, .color = { 1.0f, 1.0f, 1.0f, 1.0f } };
+        for (int i = 0, offset = 0; i < nSide_; i++)
+        {
+            elements_[offset++] = nSide_;
+            elements_[offset++] = i;
+            elements_[offset++] = (i + 1) % nSide_;
         }
     }
 
-    void addTriangleToNgon(int &offset, int i)
-    {
-        const float RADIUS = 0.7f;
-        const Color color = { 1.0f, 0.0f, 0.0f, 1.0f };
-        vertices_[offset++] = { .pos = { 0.0f, 0.0f }, .color = color };
-        float angle = 2 * std::numbers::pi * i / nSide_;
-        GLfloat x = RADIUS * std::sin(angle);
-        GLfloat y = RADIUS * std::cos(angle);
-        vertices_[offset++] = { .pos = { x, y }, .color = color };
-        angle = 2 * std::numbers::pi * (i + 1) / nSide_;
-        x = RADIUS * std::sin(angle);
-        y = RADIUS * std::cos(angle);
-        vertices_[offset++] = { .pos = { x, y }, .color = color };
-    }
-    
     void initShapeData()
     {
         // TODO: Initialisez les objets graphiques pour le dessin du polygone.
@@ -363,16 +369,11 @@ struct App : public OpenGLApplication
         //       on demande seulement de faire l'allocation de buffers suffisamment gros
         //       pour contenir le polygone durant toute l'exécution du programme.
         //       Réfléchissez bien à l'usage des buffers (paramètre de glBufferData).
-
         glGenVertexArrays(1, &vao_);
-        glGenBuffers(1, &vbo_);
-
         glBindVertexArray(vao_);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_);
 
-        // TODO: Créez un vao et spécifiez le format des données dans celui-ci.
-        //       N'oubliez pas de lier le ebo avec le vao et de délier le vao
-        //       du contexte pour empêcher des modifications sur celui-ci.
+        glGenBuffers(1, &vbo_);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_), vertices_, GL_STATIC_DRAW);
 
         glVertexAttribPointer(0, N_VALUES_PER_POS, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
@@ -380,6 +381,14 @@ struct App : public OpenGLApplication
 
         glVertexAttribPointer(1, N_VALUES_PER_COLOR, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) sizeof(Pos));
         glEnableVertexAttribArray(1);
+
+        // TODO: Créez un vao et spécifiez le format des données dans celui-ci.
+        //       N'oubliez pas de lier le ebo avec le vao et de délier le vao
+        //       du contexte pour empêcher des modifications sur celui-ci.
+
+        glGenBuffers(1, &ebo_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements_), elements_, GL_STATIC_DRAW);
 
         glBindVertexArray(0);
     }
@@ -402,13 +411,18 @@ struct App : public OpenGLApplication
             //       Attention, il ne faut pas faire d'allocation/réallocation, on veut
             //       seulement mettre à jour les buffers actuels.
             generateNgon();
-            glUseProgram(basicSP_);
-            glBindVertexArray(vao_);
+
             glBindBuffer(GL_ARRAY_BUFFER, vbo_);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices_), vertices_);
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(elements_), elements_);
         }
         // TODO: Dessin du polygone.
-        glDrawArrays(GL_TRIANGLES, 0, nSide_ * 3);
+        glUseProgram(basicSP_);
+        glBindVertexArray(vao_);
+        glDrawElements(GL_TRIANGLES, nSide_ * 3, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
     }
     
     void drawStreetlights(glm::mat4& projView)
@@ -522,8 +536,8 @@ private:
     
     // TODO: Modifiez les types de vertices_ et elements_ pour votre besoin.
     //Vertex vertices_[MAX_N_SIDES + 1];
-    Vertex vertices_[MAX_N_SIDES * 3];
-    // GLfloat elements_[MAX_N_SIDES * 3];
+    Vertex vertices_[MAX_N_SIDES + 1];
+    GLuint elements_[MAX_N_SIDES * 3];
     
     int nSide_, oldNSide_;
     
