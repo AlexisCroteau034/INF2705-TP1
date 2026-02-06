@@ -144,9 +144,8 @@ struct App : public OpenGLApplication
 	void drawFrame() override
 	{
 	    // TODO: Nettoyage de la surface de dessin.
-        glClear(GL_COLOR_BUFFER_BIT);
 	    // TODO: Partie 2: Ajoutez le nettoyage du tampon de profondeur.
-        glClear(GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         ImGui::Begin("Scene Parameters");
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
