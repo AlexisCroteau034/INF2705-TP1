@@ -95,6 +95,8 @@ struct App : public OpenGLApplication
        
         // TODO: Partie 2: Activez le test de profondeur (GL_DEPTH_TEST) et
         //       l'élimination des faces arrières (GL_CULL_FACE).
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
                 
         loadShaderPrograms();
         
@@ -144,6 +146,7 @@ struct App : public OpenGLApplication
 	    // TODO: Nettoyage de la surface de dessin.
         glClear(GL_COLOR_BUFFER_BIT);
 	    // TODO: Partie 2: Ajoutez le nettoyage du tampon de profondeur.
+        glClear(GL_DEPTH_BUFFER_BIT);
         
         ImGui::Begin("Scene Parameters");
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
@@ -484,8 +487,14 @@ struct App : public OpenGLApplication
         //
         //       La caméra est placée à la position cameraPosition et orientée
         //       par les angles cameraOrientation (en radian).
+
+        glm::mat4 view = glm::mat4(1.0f);
+
+        view = glm::rotate(view, -cameraOrientation_.x, glm::vec3(1.0f, 0.0f, 0.0f));
+        view = glm::rotate(view, -cameraOrientation_.y, glm::vec3(0.0f, 1.0f, 0.0f));
+        view = glm::translate(view, -cameraPosition_);
         
-        return glm::mat4(1.0);
+        return view;
     }
     
     glm::mat4 getPerspectiveProjectionMatrix()
