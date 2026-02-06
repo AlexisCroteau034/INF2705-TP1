@@ -504,9 +504,12 @@ struct App : public OpenGLApplication
         //       Celle-ci aura un fov de 70 degrés, un near à 0.1 et un far à 300.
         //       
         
-        // getWindowAspect();
+        float fov = glm::radians(70.0f);
+        float aspect = getWindowAspect();
+        float near = 0.1f;
+        float far = 300.0f;
         
-        return glm::mat4(1.0);
+        return glm::perspective(fov, aspect, near, far);
     }
     
     void sceneModels()
