@@ -63,9 +63,9 @@ void Model::load(const char* path)
         vertices[i].pos.x = positionX[i];
         vertices[i].pos.y = positionY[i];
         vertices[i].pos.z = positionZ[i];
-        vertices[i].color.r = colorRed[i];
-        vertices[i].color.g = colorGreen[i];
-        vertices[i].color.b = colorBlue[i];
+        vertices[i].color.r = colorRed[i] / 255.0f;
+        vertices[i].color.g = colorGreen[i] / 255.0f;
+        vertices[i].color.b = colorBlue[i] / 255.0f;
         vertices[i].color.a = 1.0f;
     }
     

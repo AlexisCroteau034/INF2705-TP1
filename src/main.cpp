@@ -63,8 +63,8 @@ struct App : public OpenGLApplication
     App()
     : nSide_(5)
     , oldNSide_(0)
-    , cameraPosition_(0.f, 0.f, 0.f)
-    , cameraOrientation_(0.f, 0.f)
+    , cameraPosition_(0.0f, 5.0f, 15.0f)
+    , cameraOrientation_(0.0f, 0.0f)
     , currentScene_(0)
     , isMouseMotionEnabled_(false)
     {
