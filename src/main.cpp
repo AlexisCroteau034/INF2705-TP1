@@ -592,6 +592,12 @@ struct App : public OpenGLApplication
         // TODO: Dessin de la totalité de la scène graphique.
         //       On devrait voir la route, le gazon, l'arbre, les lampadaires
         //       et la voiture. La voiture est contrôlable avec l'interface graphique.
+
+        glm::mat4 view = getViewMatrix();
+        glm::mat4 proj = getPerspectiveProjectionMatrix();
+        glm::mat4 projView = proj * view;
+
+        drawGround(projView);
     }
     
 private:

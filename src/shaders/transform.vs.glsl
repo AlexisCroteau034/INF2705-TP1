@@ -10,7 +10,7 @@ layout(location = 1) in vec4 color;
 
 out vec4 vertexColor;
 
-uniform mat mvp;
+uniform mat4 mvp;
 
 void main()
 {
