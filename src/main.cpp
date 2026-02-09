@@ -492,6 +492,16 @@ struct App : public OpenGLApplication
         //
         //       Désactiver le CULL_FACE pour voir les faces arrières
         //       seulement pour ce dessin.
+        glDisable(GL_CULL_FACE);
+        glUseProgram(transformSP_);
+
+        glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
+        glm::mat4 treeModel =  glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.1f, 1.0f));
+        treeModel = glm::scale(treeModel, glm::vec3(15.0f, 15.0f, 15.0f));
+
+        glm::mat4 treeMVP = projView * treeModel;
+        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(treeMVP));
+        tree_.draw();
     }
     
     void drawGround(glm::mat4& projView)
@@ -624,6 +634,7 @@ struct App : public OpenGLApplication
 
         drawGround(projView);
         drawStreetlights(projView);
+        drawTree(projView);
     }
     
 private:
