@@ -23,7 +23,7 @@ private:
     //       Il sera important de penser à comment réutiliser le plus possible les matrices.
     //       Utilisez le passage par référence ou par copie pour vous aider.
     
-    void drawFrame();
+    void drawFrame(glm::mat4& projView, glm::mat4 carModel);
     
     void drawWheel();
     void drawWheels();
@@ -57,5 +57,3 @@ public:
     GLuint colorModUniformLocation;
     GLuint mvpUniformLocation;
 };
-
-

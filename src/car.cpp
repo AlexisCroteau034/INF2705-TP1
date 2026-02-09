@@ -86,14 +86,26 @@ void Car::draw(glm::mat4& projView)
     //
     //       Les modèles sont faits de façon à ce que le devant de la voiture
     //       soit en -x (x négatif, vers la gauche dans l'écran).
+    glm::mat4 carModel = glm::mat4(1.0f);
+    carModel = glm::translate(carModel, position);
+    carModel = glm::rotate(carModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f)); 
+    carModel = glm::rotate(carModel, orientation.x, glm::vec3(1.0f, 0.0f, 0.0f)); 
+    glUniform4f(colorModUniformLocation, 1.0f, 1.0f, 1.0f, 1.0f);
+    drawFrame(projView, carModel);
+    drawWheels(projView, carModel);
+
 }
     
-void Car::drawFrame()
+void Car::drawFrame(glm::mat4& projView, glm::mat4 carModel)
 {
     // TODO: Dessin du châssis de l'automobile.
     //       Le châssis est positionné 0.25 unité au-dessus de l'origine de
     //       l'automobile.
     //       Le châssis contient 4 phares.
+
+    glm::mat4 frameMVP = projView * carModel;
+    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, glm::value_ptr(frameMVP));
+    frame_.draw();
 }
 
 void Car::drawWheel()
