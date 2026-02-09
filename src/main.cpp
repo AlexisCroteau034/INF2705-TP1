@@ -306,38 +306,50 @@ struct App : public OpenGLApplication
         const char* BASIC_VERTEX_SRC_PATH = "./shaders/basic.vs.glsl";
         const char* BASIC_FRAGMENT_SRC_PATH = "./shaders/basic.fs.glsl";
 
-		GLuint vertexShader = loadShaderObject(GL_VERTEX_SHADER, BASIC_VERTEX_SRC_PATH);
-		glAttachShader(basicSP_, vertexShader);
-		GLuint fragmentShader = loadShaderObject(GL_FRAGMENT_SHADER, BASIC_FRAGMENT_SRC_PATH);
-		glAttachShader(basicSP_, fragmentShader);
+		GLuint basicVertShader = loadShaderObject(GL_VERTEX_SHADER, BASIC_VERTEX_SRC_PATH);
+		glAttachShader(basicSP_, basicVertShader);
+		GLuint basicFragShader = loadShaderObject(GL_FRAGMENT_SHADER, BASIC_FRAGMENT_SRC_PATH);
+		glAttachShader(basicSP_, basicFragShader);
         
         glLinkProgram(basicSP_);
         checkProgramLinkingError("basicSP_", basicSP_);
 
-        glDetachShader(basicSP_, vertexShader);
-        glDeleteShader(vertexShader);
-        glDetachShader(basicSP_, fragmentShader);
-        glDeleteShader(fragmentShader);
+        glDetachShader(basicSP_, basicVertShader);
+        glDeleteShader(basicVertShader);
+        glDetachShader(basicSP_, basicFragShader);
+        glDeleteShader(basicFragShader);
         
         // Partie 2
         const char* TRANSFORM_VERTEX_SRC_PATH = "./shaders/transform.vs.glsl";
         const char* TRANSFORM_FRAGMENT_SRC_PATH = "./shaders/transform.fs.glsl";
-        
+
         // TODO: Allez chercher les locations de vos variables uniform dans le shader
         //       pour initialiser mvpUniformLocation_ et car_.mvpUniformLocation,
         //       puis colorModUniformLocation_ et car_.colorModUniformLocation.
+
+        transformSP_ = glCreateProgram();
+
+		GLuint transformVertShader = loadShaderObject(GL_VERTEX_SHADER, TRANSFORM_VERTEX_SRC_PATH);
+		glAttachShader(transformSP_, transformVertShader);
+		GLuint transformFragShader = loadShaderObject(GL_FRAGMENT_SHADER, TRANSFORM_FRAGMENT_SRC_PATH);
+		glAttachShader(transformSP_, transformFragShader);
+        
+        glLinkProgram(transformSP_);
+        checkProgramLinkingError("transformSP_", basicSP_);
+
+        glDetachShader(transformSP_, transformVertShader);
+        glDeleteShader(transformVertShader);
+        glDetachShader(transformSP_, transformFragShader);
+        glDeleteShader(transformFragShader);
+
+        colorModUniformLocation_ = glGetUniformLocation(transformSP_, "colorMod");
+        // TODO MAYBE WRONG
+        car_.colorModUniformLocation = glGetUniformLocation(transformSP_, "colorMod");
+        mvpUniformLocation_ = glGetUniformLocation(transformSP_, "mvp");
+        // TODO MAYBE WRONG
+        car_.mvpUniformLocation = glGetUniformLocation(transformSP_, "mvp");
     }
 
-    Color generateVertexColor(int index)
-    {
-        static constexpr Color colors[3] = { 
-            { 1.0f, 0.0f, 0.0f, 1.0f },
-            { 0.0f, 1.0f, 0.0f, 1.0f },
-            { 0.0f, 0.0f, 1.0f, 1.0f } 
-        };
-        return colors[index % 3];
-    }
-    
     void generateNgon()
     {
         // TODO: Générez un polygone à N côtés (couramment appelé N-gon).
@@ -347,20 +359,25 @@ struct App : public OpenGLApplication
         //       Vous devez minimiser le nombre de points et définir des indices
         //       pour permettre la réutilisation.
         const float RADIUS = 0.7f;
+        static constexpr Color colorsLookup[3] = { 
+            { 1.0f, 0.0f, 0.0f, 1.0f },
+            { 0.0f, 1.0f, 0.0f, 1.0f },
+            { 0.0f, 0.0f, 1.0f, 1.0f } 
+        };
         for (int i = 0; i < nSide_; i++)
         {
             float angle = 2 * std::numbers::pi * i / nSide_;
             vertices_[i] = { 
                 .pos = { RADIUS * std::sin(angle), RADIUS * std::cos(angle) },
-                .color = generateVertexColor(i) 
+                .color = colorsLookup[i % 3]
             };
         }
         vertices_[nSide_] = { .pos = { 0.0f, 0.0f }, .color = { 1.0f, 1.0f, 1.0f, 1.0f } };
         for (int i = 0, offset = 0; i < nSide_; i++)
         {
             elements_[offset++] = nSide_;
-            elements_[offset++] = i;
             elements_[offset++] = (i + 1) % nSide_;
+            elements_[offset++] = i;
         }
     }
 
