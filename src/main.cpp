@@ -488,6 +488,51 @@ struct App : public OpenGLApplication
         //       dessous de la route de 0.1.
         //       Réflexion supplémentaire: Que se passe-t-il s'il n'est pas déplacé?
         //       Comment expliquer ce qui est visible?
+
+        glUseProgram(transformSP_);
+
+        glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
+
+        glm::mat4 grassModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
+        grassModel = glm::scale(grassModel, glm::vec3(50.0f, 1.0f, 50.0f));
+
+        glm::mat4 grassMVP = projView * grassModel;
+        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(grassMVP));
+        grass_.draw();
+
+        const float ROAD_OFFSET = 20.0f;
+        const float ROAD_SPACING = 5.0f;
+        const int N_ROAD_SEGMENT = 7;
+
+        for (int side = 0; side < 4; ++side) {
+            float angle = glm::radians(90.0f * side);
+
+            for (int i = 0; i < N_ROAD_SEGMENT; ++i) {
+                float segmentPos = (i - (N_ROAD_SEGMENT / 2)) * ROAD_SPACING;
+
+                glm::mat4 roadModel = glm::mat4(1.0f);
+                roadModel = glm::rotate(roadModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+                roadModel = glm::translate(roadModel ,glm::vec3(segmentPos, 0.0f, ROAD_OFFSET));
+                roadModel = glm::scale(roadModel, glm::vec3(5.0f, 1.0f, 5.0f));
+
+                glm::mat4 roadMVP = projView * roadModel;
+                glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(roadMVP));
+                street_.draw();
+            }
+        }
+
+        for (int side = 0; side < 4; ++side) {
+            float angle = glm::radians(90.0f * side);
+
+            glm::mat4 cornerModel = glm::mat4(1.0f);
+            cornerModel = glm::rotate(cornerModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+            cornerModel = glm::translate(cornerModel, glm::vec3(ROAD_OFFSET, 0.0f, ROAD_OFFSET));
+            cornerModel = glm::scale(cornerModel, glm::vec3(5.0f, 1.0f, 5.0f));
+
+            glm::mat4 cornerMVP = projView * cornerModel;
+            glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(cornerMVP));
+            streetcorner_.draw();
+        }
     }
     
     glm::mat4 getViewMatrix()
