@@ -108,7 +108,7 @@ void Car::drawFrame(glm::mat4& projView, glm::mat4 carModel)
     frame_.draw();
 }
 
-void Car::drawWheel(const glm::mat4& carModel, const glm::mat4& projView, const bool isRight, const bool isFront)
+void Car::drawWheel(const glm::mat4& projView, const glm::mat4& carModel, const bool isRight, const bool isFront)
 {
     // TODO: Dessin d'une roue.
     //       La roue doit être positionnée en dessous du châssis (voir Car::drawWheels).
@@ -127,10 +127,12 @@ void Car::drawWheel(const glm::mat4& carModel, const glm::mat4& projView, const 
     glm::mat4 model = carModel;
 
     if (isFront) {
-        model = glm::rotate(model, steeringAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(-steeringAngle), glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
-    model = glm::rotate(model, wheelsRollAngle, glm::vec3(0.0f, 0.0f, 1.0f));
+    float roll = isRight ? -wheelsRollAngle : wheelsRollAngle;
+
+    model = glm::rotate(model, roll, glm::vec3(0.0f, 0.0f, 1.0f));
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, OFFSET));
 
     glm::mat4 mvp = projView * model;
@@ -139,7 +141,7 @@ void Car::drawWheel(const glm::mat4& carModel, const glm::mat4& projView, const 
     wheel_.draw();
 }
 
-void Car::drawWheels(const glm::mat4& carModel, const glm::mat4& projView)
+void Car::drawWheels(const glm::mat4& projView, const glm::mat4& carModel)
 {
     // TODO: Dessin des 4 roues.
     //       Utilisez Car::drawWheel et WHEEL_POSITIONS.
@@ -163,7 +165,7 @@ void Car::drawWheels(const glm::mat4& carModel, const glm::mat4& projView)
             model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         }
 
-        drawWheel(model, projView, isRight, isFront);
+        drawWheel(projView, model, isRight, isFront);
     }
 }
 
