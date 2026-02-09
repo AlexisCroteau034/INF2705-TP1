@@ -25,8 +25,8 @@ private:
     
     void drawFrame(glm::mat4& projView, glm::mat4 carModel);
     
-    void drawWheel();
-    void drawWheels();
+    void drawWheel(const glm::mat4& carModel, const glm::mat4& projView, const bool isRight, const bool isFront);
+    void drawWheels(const glm::mat4& carModel, const glm::mat4& projView);
     
     void drawBlinker();
     void drawLight();    

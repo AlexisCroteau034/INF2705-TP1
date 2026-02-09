@@ -454,6 +454,29 @@ struct App : public OpenGLApplication
         //
         //       Ils sont toujours orientés de façon perpendiculaire à la route
         //       pour "l'éclairer".
+
+        glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
+
+        const float OFFSET = 17.0f;
+        const float HEIGHT = -0.15f;
+        const float SPACING = 10.0f;
+
+        for (int side = 0; side < 4; ++side) {
+            float angle = glm::radians(90.0f * side);
+
+            for (int i = 0; i < 2; ++i) {
+                float zPos = (i == 0) ? -SPACING : SPACING;
+
+                glm::mat4 model = glm::mat4(1.0f);
+                model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+                model = glm::translate(model, glm::vec3(zPos, HEIGHT, OFFSET));
+                model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+                glm::mat4 mvp = projView * model;
+                glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(mvp));
+                streetlight_.draw();
+            }
+        }
     }
     
     void drawTree(glm::mat4& projView)
