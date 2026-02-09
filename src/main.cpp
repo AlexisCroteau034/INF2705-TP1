@@ -455,8 +455,6 @@ struct App : public OpenGLApplication
         //       Ils sont toujours orientés de façon perpendiculaire à la route
         //       pour "l'éclairer".
 
-        glUseProgram(transformSP_);
-
         glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
 
         const float OFFSET = 17.0f;
@@ -493,7 +491,6 @@ struct App : public OpenGLApplication
         //       Désactiver le CULL_FACE pour voir les faces arrières
         //       seulement pour ce dessin.
         glDisable(GL_CULL_FACE);
-        glUseProgram(transformSP_);
 
         glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
         glm::mat4 treeModel =  glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.1f, 1.0f));
@@ -523,8 +520,6 @@ struct App : public OpenGLApplication
         //       dessous de la route de 0.1.
         //       Réflexion supplémentaire: Que se passe-t-il s'il n'est pas déplacé?
         //       Comment expliquer ce qui est visible?
-
-        glUseProgram(transformSP_);
 
         glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
 

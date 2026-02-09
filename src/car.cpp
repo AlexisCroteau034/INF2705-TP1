@@ -96,7 +96,7 @@ void Car::drawFrame()
     //       Le châssis contient 4 phares.
 }
 
-void Car::drawWheel()
+void Car::drawWheel(const glm::mat4& carModel, const glm::mat4& projView, const bool isRight, const bool isFront)
 {
     // TODO: Dessin d'une roue.
     //       La roue doit être positionnée en dessous du châssis (voir Car::drawWheels).
@@ -109,9 +109,25 @@ void Car::drawWheel()
     //       Malheureusement, l'origine de l'objet n'est pas centrée. Il faudra
     //       changer l'axe de rotation. Celui-ci est 0.10124 unité vers
     //       l'intérieur de la roue (voir le schéma 4 dans l'énoncé).
+
+    const float OFFSET = -0.10124f;
+
+    glm::mat4 model = carModel;
+
+    if (isFront) {
+        model = glm::rotate(model, steeringAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+
+    model = glm::rotate(model, wheelsRollAngle, glm::vec3(0.0f, 0.0f, 1.0f));
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, OFFSET));
+
+    glm::mat4 mvp = projView * model;
+    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+    glUniform4f(colorModUniformLocation, 1.0f, 1.0f, 1.0f, 1.0f);
+    wheel_.draw();
 }
 
-void Car::drawWheels()
+void Car::drawWheels(const glm::mat4& carModel, const glm::mat4& projView)
 {
     // TODO: Dessin des 4 roues.
     //       Utilisez Car::drawWheel et WHEEL_POSITIONS.
@@ -123,6 +139,20 @@ void Car::drawWheels()
         glm::vec3( 1.4f , 0.245f, -0.57f),
         glm::vec3( 1.4f , 0.245f,  0.57f)
     };
+
+    for (int i = 0; i < 4; ++i) {
+        glm::mat4 model = carModel;
+        model = glm::translate(model, WHEEL_POSITIONS[i]);
+
+        bool isFront = (i <= 1);
+        bool isRight = (i % 2 != 0);
+
+        if (isRight) {
+            model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        }
+
+        drawWheel(model, projView, isRight, isFront);
+    }
 }
 
 void Car::drawBlinker()
