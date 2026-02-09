@@ -103,7 +103,8 @@ void Car::drawFrame(glm::mat4& projView, glm::mat4 carModel)
     //       l'automobile.
     //       Le châssis contient 4 phares.
 
-    glm::mat4 frameMVP = projView * carModel;
+    glm::mat4 frameModel = glm::translate(carModel, glm::vec3(0.0f, 0.25f, 0.0f));
+    glm::mat4 frameMVP = projView * frameModel;
     glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, glm::value_ptr(frameMVP));
     frame_.draw();
 }
