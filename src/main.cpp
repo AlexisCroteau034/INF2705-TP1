@@ -28,13 +28,6 @@
 using namespace gl;
 using namespace glm;
 
-// TODO: Il est fortement recommandé de définir quelques structs
-//       pour représenter les attributs.
-//       Faire de même pour représenter une vertex, qui est constitué d'attributs.
-//       Cela facilitera l'utilisation et rendra votre code plus clair.
-//       Un format entrelacé est recommandé (ordonné par vertex au lieu par attribut).
-// struct ... { ... };
-
 struct Pos
 {
     GLfloat x;
@@ -89,12 +82,9 @@ struct App : public OpenGLApplication
 
 		// Config de base.
 		
-		// TODO: Initialisez la couleur de fond.
         glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
        
-        // TODO: Partie 2: Activez le test de profondeur (GL_DEPTH_TEST) et
-        //       l'élimination des faces arrières (GL_CULL_FACE).
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
                 
@@ -143,8 +133,6 @@ struct App : public OpenGLApplication
 	// Appelée à chaque trame. Le buffer swap est fait juste après.
 	void drawFrame() override
 	{
-	    // TODO: Nettoyage de la surface de dessin.
-	    // TODO: Partie 2: Ajoutez le nettoyage du tampon de profondeur.
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         ImGui::Begin("Scene Parameters");
@@ -161,11 +149,11 @@ struct App : public OpenGLApplication
 	// Appelée lorsque la fenêtre se ferme.
 	void onClose() override
 	{
-	    // TODO: Libérez les ressources allouées (buffers, shaders, etc.).
         glDeleteVertexArrays(1, &vao_);
         glDeleteBuffers(1, &vbo_);
         glDeleteBuffers(1, &ebo_);
         glDeleteProgram(basicSP_);
+        glDeleteProgram(transformSP_);
 	}
 
 	// Appelée lors d'une touche de clavier.
@@ -275,10 +263,6 @@ struct App : public OpenGLApplication
     
     GLuint loadShaderObject(GLenum type, const char* path)
     {
-        // TODO: Chargement d'un shader object.
-        //       Utilisez readFile pour lire le fichier.
-        //       N'oubliez pas de vérifier les erreurs suite à la compilation
-        //       avec la méthode App::checkShaderCompilingError.
 		GLuint shader = glCreateShader(type);
 
 		std::string srcStd = readFile(path).c_str();
@@ -292,14 +276,6 @@ struct App : public OpenGLApplication
     
     void loadShaderPrograms()
     {
-        // TODO: Chargement des shader programs.
-        //       N'oubliez pas de vérifier les erreurs suite à la liaison (linking)
-        //       avec la méthode App::checkProgramLinkingError. Vous pouvez
-        //       donner un nom unique pour plus facilement lire les erreurs 
-        //       dans la console.
-        //       Il est recommandé de détacher et de supprimer les shaders objects
-        //       directement après la liaison.
-        
 		basicSP_ = glCreateProgram();
 
         // Partie 1
@@ -323,10 +299,6 @@ struct App : public OpenGLApplication
         const char* TRANSFORM_VERTEX_SRC_PATH = "./shaders/transform.vs.glsl";
         const char* TRANSFORM_FRAGMENT_SRC_PATH = "./shaders/transform.fs.glsl";
 
-        // TODO: Allez chercher les locations de vos variables uniform dans le shader
-        //       pour initialiser mvpUniformLocation_ et car_.mvpUniformLocation,
-        //       puis colorModUniformLocation_ et car_.colorModUniformLocation.
-
         transformSP_ = glCreateProgram();
 
 		GLuint transformVertShader = loadShaderObject(GL_VERTEX_SHADER, TRANSFORM_VERTEX_SRC_PATH);
@@ -343,22 +315,15 @@ struct App : public OpenGLApplication
         glDeleteShader(transformFragShader);
 
         colorModUniformLocation_ = glGetUniformLocation(transformSP_, "colorMod");
-        // TODO MAYBE WRONG
         car_.colorModUniformLocation = glGetUniformLocation(transformSP_, "colorMod");
         mvpUniformLocation_ = glGetUniformLocation(transformSP_, "mvp");
-        // TODO MAYBE WRONG
         car_.mvpUniformLocation = glGetUniformLocation(transformSP_, "mvp");
     }
 
     void generateNgon()
     {
-        // TODO: Générez un polygone à N côtés (couramment appelé N-gon).
-        //       Vous devez gérer les cas entre 5 et 12 côtés (pentagone, hexagone
-        //       , etc.). Ceux-ci ont un rayon constant de 0.7.
-        //       Chaque point possède une couleur (libre au choix).
-        //       Vous devez minimiser le nombre de points et définir des indices
-        //       pour permettre la réutilisation.
         const float RADIUS = 0.7f;
+        // change the color for each vertex
         static constexpr Color colorsLookup[3] = { 
             { 1.0f, 0.0f, 0.0f, 1.0f },
             { 0.0f, 1.0f, 0.0f, 1.0f },
@@ -383,11 +348,6 @@ struct App : public OpenGLApplication
 
     void initShapeData()
     {
-        // TODO: Initialisez les objets graphiques pour le dessin du polygone.
-        //       Ne passez aucune donnée pour le moment (déjà géré dans App::sceneShape),
-        //       on demande seulement de faire l'allocation de buffers suffisamment gros
-        //       pour contenir le polygone durant toute l'exécution du programme.
-        //       Réfléchissez bien à l'usage des buffers (paramètre de glBufferData).
         glGenVertexArrays(1, &vao_);
         glBindVertexArray(vao_);
 
@@ -400,10 +360,6 @@ struct App : public OpenGLApplication
 
         glVertexAttribPointer(1, N_VALUES_PER_COLOR, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) sizeof(Pos));
         glEnableVertexAttribArray(1);
-
-        // TODO: Créez un vao et spécifiez le format des données dans celui-ci.
-        //       N'oubliez pas de lier le ebo avec le vao et de délier le vao
-        //       du contexte pour empêcher des modifications sur celui-ci.
 
         glGenBuffers(1, &ebo_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
@@ -422,13 +378,6 @@ struct App : public OpenGLApplication
         if (hasNumberOfSidesChanged)
         {
             oldNSide_ = nSide_;
-            // generateNgon(vertices_, elements_, nSide_);
-            
-            // TODO: Le nombre de côtés a changé, la méthode App::generateNgon
-            //       (que vous avez implémentée) a modifié les données sur le CPU.
-            //       Ici, il faut envoyer les données à jour au GPU.
-            //       Attention, il ne faut pas faire d'allocation/réallocation, on veut
-            //       seulement mettre à jour les buffers actuels.
             generateNgon();
 
             glBindBuffer(GL_ARRAY_BUFFER, vbo_);
@@ -437,7 +386,6 @@ struct App : public OpenGLApplication
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(elements_), elements_);
         }
-        // TODO: Dessin du polygone.
         glUseProgram(basicSP_);
         glBindVertexArray(vao_);
         glDrawElements(GL_TRIANGLES, nSide_ * 3, GL_UNSIGNED_INT, 0);
@@ -446,15 +394,6 @@ struct App : public OpenGLApplication
     
     void drawStreetlights(glm::mat4& projView)
     {
-        // TODO: Dessin des lampadaires. Ceux-ci doivent être immobiles.
-        //
-        //       Placez les positions comme sur l'image de l'énoncé.
-        //       La distance par rapport au bord de la route est de 0.5.
-        //       La hauteur est de -0.15 (un peu renfoncé dans le sol).
-        //
-        //       Ils sont toujours orientés de façon perpendiculaire à la route
-        //       pour "l'éclairer".
-
         glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
 
         const float OFFSET = 17.0f;
@@ -481,15 +420,6 @@ struct App : public OpenGLApplication
     
     void drawTree(glm::mat4& projView)
     {
-        // TODO: Dessin de l'arbre. Il doit être immobile.
-        //
-        //       Placez la position comme sur l'image de l'énoncé.
-        //
-        //       Il a une mise à l'échelle sur tous les axes
-        //       d'un facteur 15.
-        //
-        //       Désactiver le CULL_FACE pour voir les faces arrières
-        //       seulement pour ce dessin.
         glDisable(GL_CULL_FACE);
 
         glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
@@ -504,25 +434,8 @@ struct App : public OpenGLApplication
     
     void drawGround(glm::mat4& projView)
     {
-        // TODO: Dessin du sol.
-        //
-        //       Ici, les modèles originaux sont des carrés de 1 unité.
-        //       
-        //       La route est consistué par partie de plusieurs segments de route.
-        //       
-        //       La longueur total d'un côté de route est de 30 et il doit y avoir 7
-        //       segments. Un segment de route est 5 unitées de large.
-        //       La ligne blanche devrait traverser le long de la route.
-        //
-        //       Les coins des routes sont remplis par un autre modèle sans ligne blanche.
-        //
-        //       Le gazon a aussi une mise à l'échelle pour être long de 50
-        //       unités et large de 50. Celui-ci doit aussi être légèrement en
-        //       dessous de la route de 0.1.
         //       Réflexion supplémentaire: Que se passe-t-il s'il n'est pas déplacé?
         //       Comment expliquer ce qui est visible?
-
-
         glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
 
         glm::mat4 grassModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
@@ -569,18 +482,6 @@ struct App : public OpenGLApplication
     
     glm::mat4 getViewMatrix()
     {
-        // TODO: Calculer la matrice de vue.
-        //
-        //       Vous n'avez pas le droit d'utiliser de fonction lookAt ou 
-        //       d'inversion de matrice. À la place, procéder en inversant
-        //       les opérations. N'oubliez pas que cette matrice est appliquée
-        //       aux éléments de la scène. Au lieu de déplacer la caméra 10
-        //       unités vers la gauche, on déplace le monde 10 unités vers la
-        //       droite.
-        //
-        //       La caméra est placée à la position cameraPosition et orientée
-        //       par les angles cameraOrientation (en radian).
-
         glm::mat4 view = glm::mat4(1.0f);
 
         view = glm::rotate(view, -cameraOrientation_.x, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -592,11 +493,6 @@ struct App : public OpenGLApplication
     
     glm::mat4 getPerspectiveProjectionMatrix()
     {
-        // TODO: Calculer la matrice de projection.
-        //
-        //       Celle-ci aura un fov de 70 degrés, un near à 0.1 et un far à 300.
-        //       
-        
         float fov = glm::radians(70.0f);
         float aspect = getWindowAspect();
         float near = 0.1f;
@@ -632,6 +528,7 @@ struct App : public OpenGLApplication
         glUseProgram(transformSP_);
         drawGround(projView);
         drawTree(projView);
+        drawStreetlights(projView);
         car_.draw(projView);
     }
     
@@ -648,8 +545,6 @@ private:
     static constexpr unsigned int MIN_N_SIDES = 5;
     static constexpr unsigned int MAX_N_SIDES = 12;
     
-    // TODO: Modifiez les types de vertices_ et elements_ pour votre besoin.
-    //Vertex vertices_[MAX_N_SIDES + 1];
     Vertex vertices_[MAX_N_SIDES + 1];
     GLuint elements_[MAX_N_SIDES * 3];
     

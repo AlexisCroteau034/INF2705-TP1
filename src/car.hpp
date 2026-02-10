@@ -28,9 +28,9 @@ private:
     void drawWheel(const glm::mat4& projView, const glm::mat4& carModel, const bool isRight, const bool isFront);
     void drawWheels(const glm::mat4& projView, const glm::mat4& carModel);
     
-    void drawBlinker(const glm::mat4& projView, const glm::mat4& headLightModel, bool isRight);
-    void drawLight(const glm::mat4& projView, const glm::mat4& headLightModel, bool isFront);    
-    void drawHeadlight(const glm::mat4& projView, const glm::mat4& carModel, bool isFront, bool isRight);
+    void drawBlinker(const glm::mat4& projView, const glm::mat4& headLightModel, bool isLeftHeadlight);
+    void drawLight(const glm::mat4& projView, const glm::mat4& headLightModel, bool isFrontHeadlight);    
+    void drawHeadlight(const glm::mat4& projView, const glm::mat4& carModel, bool isFrontHeadlight, bool isLeftHeadlight);
     void drawHeadlights(const glm::mat4& projView, const glm::mat4& carModel);
     
 private:    

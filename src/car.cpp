@@ -87,7 +87,7 @@ void Car::draw(glm::mat4& projView)
     //       Les modèles sont faits de façon à ce que le devant de la voiture
     //       soit en -x (x négatif, vers la gauche dans l'écran).
     glm::mat4 carModel = glm::mat4(1.0f);
-    carModel = glm::translate(carModel, position + glm::vec3(0.0f, 0.0f, 20.0f));
+    carModel = glm::translate(carModel, position + glm::vec3(0.0f, 0.0f, -20.0f));
     carModel = glm::rotate(carModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f)); 
     carModel = glm::rotate(carModel, orientation.x, glm::vec3(1.0f, 0.0f, 0.0f)); 
     glUniform4f(colorModUniformLocation, 1.0f, 1.0f, 1.0f, 1.0f);
@@ -109,7 +109,7 @@ void Car::drawFrame(glm::mat4& projView, glm::mat4& carModel)
     frame_.draw();
 }
 
-void Car::drawWheel(const glm::mat4& projView, const glm::mat4& carModel, const bool isRight, const bool isFront)
+void Car::drawWheel(const glm::mat4& projView, const glm::mat4& carModel, const bool isLeft, const bool isFront)
 {
     // TODO: Dessin d'une roue.
     //       La roue doit être positionnée en dessous du châssis (voir Car::drawWheels).
@@ -131,7 +131,7 @@ void Car::drawWheel(const glm::mat4& projView, const glm::mat4& carModel, const 
         model = glm::rotate(model, glm::radians(-steeringAngle), glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
-    float roll = isRight ? -wheelsRollAngle : wheelsRollAngle;
+    float roll = isLeft ? -wheelsRollAngle : wheelsRollAngle;
 
     model = glm::rotate(model, roll, glm::vec3(0.0f, 0.0f, 1.0f));
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, OFFSET));
@@ -160,22 +160,21 @@ void Car::drawWheels(const glm::mat4& projView, const glm::mat4& carModel)
         model = glm::translate(model, WHEEL_POSITIONS[i]);
 
         bool isFront = (i <= 1);
-        bool isRight = (i % 2 != 0);
+        bool isLeft = (i % 2 != 0);
 
-        if (isRight) {
+        if (isLeft) {
             model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         }
 
-        drawWheel(projView, model, isRight, isFront);
+        drawWheel(projView, model, isLeft, isFront);
     }
 }
 
-void Car::drawBlinker(const glm::mat4& projView, const glm::mat4& headLightModel, bool isRight)
+void Car::drawBlinker(const glm::mat4& projView, const glm::mat4& carModel, bool isLeftHeadlight)
 {
     // TODO: Dessin d'un cligotant d'un phare.
     //       Il est positionné à z=-0.06065.
     
-    bool isLeftHeadlight = false;
     bool isBlinkerActivated = (isLeftHeadlight  && isLeftBlinkerActivated) ||
                               (!isLeftHeadlight && isRightBlinkerActivated);
 
@@ -185,9 +184,22 @@ void Car::drawBlinker(const glm::mat4& projView, const glm::mat4& headLightModel
     // TODO: Changement de couleur si le clignotant est activé ou non.
     // if (isBlinkerOn && isBlinkerActivated)
     //    ...
+
+    if (isBlinkerOn && isBlinkerActivated)
+    {
+        glUniform4f(colorModUniformLocation, ON_COLOR.x, ON_COLOR.y, ON_COLOR.z, 1.0f);
+    }
+    else
+    {
+        glUniform4f(colorModUniformLocation, OFF_COLOR.x, OFF_COLOR.y, OFF_COLOR.z, 1.0f);
+    }
+    glm::mat4 blinkerModel = glm::translate(carModel, glm::vec3(0.0f, 0.0f, -0.06065f));
+    glm::mat4 mvp = projView * blinkerModel;
+    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+    blinker_.draw();
 }
 
-void Car::drawLight(const glm::mat4& projView, const glm::mat4& headLightModel, bool isFront)
+void Car::drawLight(const glm::mat4& projView, const glm::mat4& headLightModel, bool isFrontHeadlight)
 {
     // TODO: Dessin d'une lumière de phare.
     //       Elle est positionnée à z=0.029.
@@ -205,7 +217,7 @@ void Car::drawLight(const glm::mat4& projView, const glm::mat4& headLightModel, 
 
     glm::vec3 color;
 
-    if (isFront) {
+    if (isFrontHeadlight) {
         color = isHeadlightOn ? FRONT_ON_COLOR : FRONT_OFF_COLOR;
     } else {
         color = isBraking ? REAR_ON_COLOR : REAR_OFF_COLOR;
@@ -220,7 +232,7 @@ void Car::drawLight(const glm::mat4& projView, const glm::mat4& headLightModel, 
     light_.draw();
 }
 
-void Car::drawHeadlight(const glm::mat4& projView, const glm::mat4& headLightModel, bool isFront, bool isRight) 
+void Car::drawHeadlight(const glm::mat4& projView, const glm::mat4& headLightModel, bool isFrontHeadlight, bool isLeftHeadlight) 
 {
     // TODO: Dessin d'un phare de l'automobile.
     //       Un phare est constitué d'une lumière et d'un clignotant.
@@ -230,16 +242,16 @@ void Car::drawHeadlight(const glm::mat4& projView, const glm::mat4& headLightMod
 
     glm::mat4 model = headLightModel;
 
-    if (isFront && isRight) {
-        model = glm::rotate(model, glm::radians(5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    }
-    else if (isFront)
-    {
+    if (isFrontHeadlight && isLeftHeadlight) {
         model = glm::rotate(model, glm::radians(-5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     }
+    else if (isFrontHeadlight)
+    {
+        model = glm::rotate(model, glm::radians(5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    }
 
-    drawLight(projView, model, isFront);
-    drawBlinker(projView, model, isRight);
+    drawLight(projView, model, isFrontHeadlight);
+    drawBlinker(projView, model, isLeftHeadlight);
 }
 
 void Car::drawHeadlights(const glm::mat4& projView, const glm::mat4& carModel)
@@ -259,14 +271,13 @@ void Car::drawHeadlights(const glm::mat4& projView, const glm::mat4& carModel)
         glm::mat4 model = carModel;
         model = glm::translate(model, HEADLIGHT_POSITIONS[i]);
 
-        bool isFront = (i <= 1);
-        bool isRight = (i % 2 != 0);
+        bool isFrontHeadlight = HEADLIGHT_POSITIONS[i].x < 0;
+        bool isLeftHeadlight = HEADLIGHT_POSITIONS[i].z < 0;
 
-        if (isRight) {
+        if (!isLeftHeadlight) {
             model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f)); 
         }
 
-        drawHeadlight(projView, model, isFront, isRight);
+        drawHeadlight(projView, model, isFrontHeadlight, isLeftHeadlight);
     }
 }
-
