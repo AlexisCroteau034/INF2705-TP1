@@ -4,13 +4,6 @@
 
 using namespace gl;
 
-// TODO: Il est fortement recommandé de définir quelques structs
-//       pour représenter les attributs.
-//       Faire de même pour représenter une vertex, qui est constitué d'attributs.
-//       Cela facilitera l'utilisation et rendra votre code plus clair.
-//       Un format entrelacé est recommandé (ordonné par vertex au lieu par attribut).
-// struct ... { ... };
-
 struct Pos
 {
     GLfloat x;
@@ -54,8 +47,6 @@ void Model::load(const char* path)
     // Les faces sont toutes des triangles dans nos modèles (donc 3 indices par face).
     std::vector<std::vector<unsigned int>> facesIndices = plyIn.getFaceIndices<unsigned int>();
 
-    // TODO: Rassemblez les propriétés du fichier .ply pour correspondre au
-    //       format de donnée souhaité (celui que vous avez défini dans la struct).
     size_t numVertices = positionX.size();
     std::vector<Vertex> vertices(numVertices);
 
@@ -69,7 +60,6 @@ void Model::load(const char* path)
         vertices[i].color.a = 1.0f;
     }
     
-    // TODO: Rassemblez les indices dans un seul tableau contigu.
     std::vector<GLuint> indices;
     for (const auto& face: facesIndices) {
         for (GLuint i : face) {
@@ -77,13 +67,6 @@ void Model::load(const char* path)
         }
     }
     
-    // TODO: Allocation des ressources sur la carte graphique et envoyer les
-    //       données traitées dans le vbo et ebo sur la carte graphique.
-
-    // TODO: Créez un vao et spécifiez le format des données dans celui-ci.
-    //       N'oubliez pas de lier le ebo avec le vao et de délier le vao
-    //       du contexte pour empêcher des modifications sur celui-ci.
-
     glGenVertexArrays(1, &vao_);
     glBindVertexArray(vao_);
 
@@ -103,13 +86,11 @@ void Model::load(const char* path)
 
     glBindVertexArray(0);
     
-    // TODO: Initialisez count_, qui correspond au nombre d'indices à dessiner.
     count_ = static_cast<GLsizei>(indices.size());
 }
 
 Model::~Model()
 {
-    // TODO: Libérez les ressources allouées.
     glDeleteVertexArrays(1, &vao_);
     glDeleteBuffers(1, &vbo_);
     glDeleteBuffers(1, &ebo_);
@@ -117,7 +98,6 @@ Model::~Model()
 
 void Model::draw()
 {
-    // TODO: Dessin du modèle.
     glBindVertexArray(vao_);
     glDrawElements(GL_TRIANGLES, count_, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);

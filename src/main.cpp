@@ -56,7 +56,7 @@ struct App : public OpenGLApplication
     App()
     : nSide_(5)
     , oldNSide_(0)
-    , cameraPosition_(0.0f, 5.0f, 15.0f)
+    , cameraPosition_(0.0f, 5.0f, -7.5f)
     , cameraOrientation_(0.0f, 0.0f)
     , currentScene_(0)
     , isMouseMotionEnabled_(false)
@@ -95,8 +95,6 @@ struct App : public OpenGLApplication
         
         // Partie 2
         loadModels();
-        
-        // TODO: Insérez les initialisations supplémentaires ici au besoin.
 	}
 	
 	    
@@ -340,9 +338,10 @@ struct App : public OpenGLApplication
         vertices_[nSide_] = { .pos = { 0.0f, 0.0f }, .color = { 1.0f, 1.0f, 1.0f, 1.0f } };
         for (int i = 0, offset = 0; i < nSide_; i++)
         {
-            elements_[offset++] = nSide_;
-            elements_[offset++] = (i + 1) % nSide_;
-            elements_[offset++] = i;
+            // connection indexes (counter clockwise to avoid culling)
+            elements_[offset++] = nSide_; // center
+            elements_[offset++] = (i + 1) % nSide_; // next
+            elements_[offset++] = i; // current
         }
     }
 
@@ -434,10 +433,9 @@ struct App : public OpenGLApplication
     
     void drawGround(glm::mat4& projView)
     {
-        //       Réflexion supplémentaire: Que se passe-t-il s'il n'est pas déplacé?
-        //       Comment expliquer ce qui est visible?
         glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
 
+        // offset ground by -0.1 to avoid overlap (depth buffer doesnt know which surface is in front)
         glm::mat4 grassModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
         grassModel = glm::scale(grassModel, glm::vec3(50.0f, 1.0f, 50.0f));
 
@@ -517,10 +515,6 @@ struct App : public OpenGLApplication
         updateCameraInput();
         car_.update(deltaTime_);
         
-        // TODO: Dessin de la totalité de la scène graphique.
-        //       On devrait voir la route, le gazon, l'arbre, les lampadaires
-        //       et la voiture. La voiture est contrôlable avec l'interface graphique.
-
         glm::mat4 view = getViewMatrix();
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;

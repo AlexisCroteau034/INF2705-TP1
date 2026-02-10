@@ -17,12 +17,6 @@ public:
     void draw(glm::mat4& projView);
     
 private:
-    // TODO: Une division en méthodes a déjà été réalisée pour vous.
-    //       Libre à vous de modifier (ou ajouter) les définitions (et surtout
-    //       d'ajouter des paramètres d'entrées). Procédez comme bon vous semble.
-    //       Il sera important de penser à comment réutiliser le plus possible les matrices.
-    //       Utilisez le passage par référence ou par copie pour vous aider.
-    
     void drawFrame(glm::mat4& projView, glm::mat4& carModel);
     
     void drawWheel(const glm::mat4& projView, const glm::mat4& carModel, const bool isRight, const bool isFront);
