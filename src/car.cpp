@@ -93,7 +93,7 @@ void Car::draw(glm::mat4& projView)
     glUniform4f(colorModUniformLocation, 1.0f, 1.0f, 1.0f, 1.0f);
     drawFrame(projView, carModel);
     drawWheels(projView, carModel);
-
+    drawHeadlights(projView, carModel);
 }
     
 void Car::drawFrame(glm::mat4& projView, glm::mat4 carModel)
@@ -170,7 +170,7 @@ void Car::drawWheels(const glm::mat4& projView, const glm::mat4& carModel)
     }
 }
 
-void Car::drawBlinker()
+void Car::drawBlinker(const glm::mat4& projView, const glm::mat4& headLightModel, bool isRight)
 {
     // TODO: Dessin d'un cligotant d'un phare.
     //       Il est positionné à z=-0.06065.
@@ -187,7 +187,7 @@ void Car::drawBlinker()
     //    ...
 }
 
-void Car::drawLight()
+void Car::drawLight(const glm::mat4& projView, const glm::mat4& headLightModel, bool isFront)
 {
     // TODO: Dessin d'une lumière de phare.
     //       Elle est positionnée à z=0.029.
@@ -200,18 +200,45 @@ void Car::drawLight()
     const glm::vec3 FRONT_OFF_COLOR(0.5f, 0.5f, 0.5f);
     const glm::vec3 REAR_ON_COLOR  (1.0f, 0.1f, 0.1f);
     const glm::vec3 REAR_OFF_COLOR (0.5f, 0.1f, 0.1f);
+
+    const float Z_OFFSET = 0.029;
+
+    glm::vec3 color;
+
+    if (isFront) {
+        color = isHeadlightOn ? FRONT_ON_COLOR : FRONT_OFF_COLOR;
+    } else {
+        color = isBraking ? REAR_ON_COLOR : REAR_OFF_COLOR;
+    }
+
+    glm::mat4 model = glm::translate(headLightModel, glm::vec3(0.0f, 0.0f, Z_OFFSET));
+    glm::mat4 mvp = projView * model;
+
+    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+    glUniform4f(colorModUniformLocation, color.r, color.g, color.b, 1.0f);
+
+    light_.draw();
 }
 
-void Car::drawHeadlight()
+void Car::drawHeadlight(const glm::mat4& projView, const glm::mat4& headLightModel, bool isFront, bool isRight) 
 {
     // TODO: Dessin d'un phare de l'automobile.
     //       Un phare est constitué d'une lumière et d'un clignotant.
     //       Le phare doit être positionné devant ou derrière le châssis (voir Car::drawHeadlights).
     //       Une petite rotation de 5 degrés est nécessaire pour coller le haut des phares avant sur le châssis
     //       (Le devant du véhicule est en angle).
+
+    glm::mat4 model = headLightModel;
+
+    if (isFront) {
+        model = glm::rotate(model, glm::radians(5.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+
+    drawLight(projView, model, isFront);
+    drawBlinker(projView, model, isRight);
 }
 
-void Car::drawHeadlights()
+void Car::drawHeadlights(const glm::mat4& projView, const glm::mat4& carModel)
 {
     // TODO: Dessin des 4 phares.
     //       Utilisez Car::drawHeadlight et HEADLIGHT_POSITIONS.
@@ -223,5 +250,19 @@ void Car::drawHeadlights()
         glm::vec3( 2.0019f, 0.38f, -0.45f),
         glm::vec3( 2.0019f, 0.38f,  0.45f)
     };
+
+    for (int i = 0; i < 4; ++i) {
+        glm::mat4 model = carModel;
+        model = glm::translate(model, HEADLIGHT_POSITIONS[i]);
+
+        bool isFront = (i <= 1);
+        bool isRight = (i % 2 != 0);
+
+        if (isRight) {
+            model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f)); 
+        }
+
+        drawHeadlight(projView, model, isFront, isRight);
+    }
 }
 

@@ -28,10 +28,10 @@ private:
     void drawWheel(const glm::mat4& projView, const glm::mat4& carModel, const bool isRight, const bool isFront);
     void drawWheels(const glm::mat4& projView, const glm::mat4& carModel);
     
-    void drawBlinker();
-    void drawLight();    
-    void drawHeadlight();
-    void drawHeadlights();
+    void drawBlinker(const glm::mat4& projView, const glm::mat4& headLightModel, bool isRight);
+    void drawLight(const glm::mat4& projView, const glm::mat4& headLightModel, bool isFront);    
+    void drawHeadlight(const glm::mat4& projView, const glm::mat4& carModel, bool isFront, bool isRight);
+    void drawHeadlights(const glm::mat4& projView, const glm::mat4& carModel);
     
 private:    
     Model frame_;
