@@ -337,7 +337,6 @@ struct App : public OpenGLApplication
 	// Appelée lorsque la fenêtre se ferme.
 	void onClose() override
 	{
-        glDeleteProgram(basicSP_);
         glDeleteProgram(transformSP_);
 	}
 
@@ -478,26 +477,6 @@ struct App : public OpenGLApplication
     
     void loadShaderPrograms()
     {
-		basicSP_ = glCreateProgram();
-
-        // Partie 1
-        const char* BASIC_VERTEX_SRC_PATH = "./shaders/basic.vs.glsl";
-        const char* BASIC_FRAGMENT_SRC_PATH = "./shaders/basic.fs.glsl";
-
-		GLuint basicVertShader = loadShaderObject(GL_VERTEX_SHADER, BASIC_VERTEX_SRC_PATH);
-		glAttachShader(basicSP_, basicVertShader);
-		GLuint basicFragShader = loadShaderObject(GL_FRAGMENT_SHADER, BASIC_FRAGMENT_SRC_PATH);
-		glAttachShader(basicSP_, basicFragShader);
-        
-        glLinkProgram(basicSP_);
-        checkProgramLinkingError("basicSP_", basicSP_);
-
-        glDetachShader(basicSP_, basicVertShader);
-        glDeleteShader(basicVertShader);
-        glDetachShader(basicSP_, basicFragShader);
-        glDeleteShader(basicFragShader);
-        
-        // Partie 2
         const char* TRANSFORM_VERTEX_SRC_PATH = "./shaders/transform.vs.glsl";
         const char* TRANSFORM_FRAGMENT_SRC_PATH = "./shaders/transform.fs.glsl";
 
@@ -509,7 +488,7 @@ struct App : public OpenGLApplication
 		glAttachShader(transformSP_, transformFragShader);
         
         glLinkProgram(transformSP_);
-        checkProgramLinkingError("transformSP_", basicSP_);
+        checkProgramLinkingError("transformSP_", transformSP_);
 
         glDetachShader(transformSP_, transformVertShader);
         glDeleteShader(transformVertShader);
@@ -855,7 +834,6 @@ struct App : public OpenGLApplication
     
 private:
     // Shaders
-    GLuint basicSP_;
     GLuint transformSP_;
     GLuint colorModUniformLocation_;
     GLuint mvpUniformLocation_;
