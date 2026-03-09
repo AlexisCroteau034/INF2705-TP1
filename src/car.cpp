@@ -104,7 +104,7 @@ void Car::update(float deltaTime)
     carModel = glm::rotate(carModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
-void Car::draw(glm::mat4& projView)
+void Car::draw(glm::mat4& projView, glm::mat4& view)
 {
     glm::mat4 carModel = glm::mat4(1.0f);
     carModel = glm::translate(carModel, position + glm::vec3(0.0f, 0.0f, -20.0f));

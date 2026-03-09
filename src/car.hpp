@@ -4,6 +4,10 @@
 #include <glm/glm.hpp>
 
 #include "model.hpp"
+#include "uniform_buffer.hpp"
+
+class EdgeEffect;
+class CelShading;
 
 class Car
 {   
@@ -14,9 +18,12 @@ public:
     
     void update(float deltaTime);
     
-    void draw(glm::mat4& projView);
+    void draw(glm::mat4& projView, glm::mat4& view);
+
+    void drawWindows(glm::mat4& projView, glm::mat4& view);
     
 private:
+    // TODO: Adapter les paramètres des méthodes privée ici au besoin, surtout pour la partie 3.
     void drawFrame(glm::mat4& projView, glm::mat4& carModel);
     
     void drawWheel(const glm::mat4& projView, const glm::mat4& carModel, const bool isRight, const bool isFront);
@@ -28,12 +35,19 @@ private:
     void drawHeadlights(const glm::mat4& projView, const glm::mat4& carModel);
     
 private:    
+    Model windows[6];
     Model frame_;
     Model wheel_;
     Model blinker_;
     Model light_;
     
 public:
+    glm::mat4 carModel;
+
+    EdgeEffect* edgeEffectShader;
+    CelShading* celShadingShader;
+    UniformBuffer* material;
+
     glm::vec3 position;
     glm::vec2 orientation;    
     

@@ -23,10 +23,104 @@
 #include "model.hpp"
 #include "car.hpp"
 
+#include "model_data.hpp"
+#include "shaders.hpp"
+#include "textures.hpp"
+#include "uniform_buffer.hpp"
+
 #define CHECK_GL_ERROR printGLError(__FILE__, __LINE__)
 
 using namespace gl;
 using namespace glm;
+
+// Définition des structures pour la communication avec le shader. NE PAS MODIFIER.
+
+struct Material
+{
+    glm::vec4 emission; // vec3, but padded
+    glm::vec4 ambient;  // vec3, but padded
+    glm::vec4 diffuse;  // vec3, but padded
+    glm::vec3 specular;
+    GLfloat shininess;
+};
+
+struct DirectionalLight
+{
+    glm::vec4 ambient;   // vec3, but padded
+    glm::vec4 diffuse;   // vec3, but padded
+    glm::vec4 specular;  // vec3, but padded    
+    glm::vec4 direction; // vec3, but padded
+};
+
+struct SpotLight
+{
+    glm::vec4 ambient;   // vec3, but padded
+    glm::vec4 diffuse;   // vec3, but padded
+    glm::vec4 specular;  // vec3, but padded
+    
+    glm::vec4 position;  // vec3, but padded
+    glm::vec3 direction;
+    GLfloat exponent;
+    GLfloat openingAngle;
+    
+    GLfloat padding[3];
+};
+
+// Matériels
+
+Material defaultMat = 
+{
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {0.7f, 0.7f, 0.7f},
+    10.0f
+};
+
+Material grassMat = 
+{
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {0.8f, 0.8f, 0.8f, 0.0f},
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {0.05f, 0.05f, 0.05f},
+    100.0f
+};
+
+Material streetMat = 
+{
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {0.7f, 0.7f, 0.7f, 0.0f},
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {0.025f, 0.025f, 0.025f},
+    300.0f
+};
+
+Material streetlightMat = 
+{
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {0.8f, 0.8f, 0.8f, 0.0f},
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {0.7f, 0.7f, 0.7f},
+    10.0f
+};
+
+Material streetlightLightMat = 
+{
+    {0.8f, 0.7f, 0.5f, 0.0f},
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {0.7f, 0.7f, 0.7f},
+    10.0f
+};
+
+Material windowMat = 
+{
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {1.0f, 1.0f, 1.0f},
+    2.0f
+};
 
 struct Pos
 {
@@ -54,9 +148,7 @@ constexpr uint8_t N_VALUES_PER_COLOR = sizeof(Color) / sizeof(GLfloat);
 struct App : public OpenGLApplication
 {
     App()
-    : nSide_(5)
-    , oldNSide_(0)
-    , cameraPosition_(0.0f, 5.0f, -7.5f)
+    : cameraPosition_(0.0f, 5.0f, -7.5f)
     , cameraOrientation_(0.0f, 0.0f)
     , currentScene_(0)
     , isMouseMotionEnabled_(false)
@@ -81,21 +173,123 @@ struct App : public OpenGLApplication
 		);
 
 		// Config de base.
-		
-        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-       
+        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
-                
-        loadShaderPrograms();
         
         // Partie 1
-        initShapeData();
         
-        // Partie 2
+        // TODO:
+        // Création des shaders program.
+        // Fait appel à la méthode "create()".
+        
+        
+        // TODO: À ajouter.
+        car_.edgeEffectShader = &edgeEffectShader_;
+        car_.celShadingShader = &celShadingShader_;
+        car_.material = &material_;
+        
+        
+        // TODO: Chargement des textures, ainsi que la configuration de leurs paramètres.
+        //
+        //       Les textures ne se répètent pas, sauf le sol, la route (mais pas les coins), les arbres et les lampadaires.
+        //
+        //       Les textures ont un fini lisse, à l’exception des arbres, des lumières de lampadaire et
+        //       des fenêtres de la voiture.
+        //       
+        //       Le mipmap __ne doit pas__ être activé pour toutes les textures, seulement le sol et la route.
+        //
+       
+        // Simplement pour réduire l'effet "négatif" du mipmap qui rend la
+        // texture flou trop près.
+	    // streetTexture_.use();
+	    // glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
+	    
+        
+        // TODO: Chargement des deux skyboxes.
+        
+        const char* pathes[] = {
+            "../textures/skybox/Daylight Box_Right.bmp",
+            "../textures/skybox/Daylight Box_Left.bmp",
+            "../textures/skybox/Daylight Box_Top.bmp",
+            "../textures/skybox/Daylight Box_Bottom.bmp",
+            "../textures/skybox/Daylight Box_Front.bmp",
+            "../textures/skybox/Daylight Box_Back.bmp",
+        };
+        
+        const char* nightPathes[] = {
+            "../textures/skyboxNight/right.png",
+            "../textures/skyboxNight/left.png",
+            "../textures/skyboxNight/top.png",
+            "../textures/skyboxNight/bottom.png",
+            "../textures/skyboxNight/front.png",
+            "../textures/skyboxNight/back.png",
+        };
+        
+        loadModels();        
+        initStaticModelMatrices();
+        
+        // Partie 3
+        
+        // TODO: À ajouter. Aucune modification nécessaire.
+        material_.allocate(&defaultMat, sizeof(Material));
+        material_.setBindingIndex(0);
+        
+        lightsData_.dirLight =
+        {
+            {0.2f, 0.2f, 0.2f, 0.0f},
+            {1.0f, 1.0f, 1.0f, 0.0f},
+            {0.5f, 0.5f, 0.5f, 0.0f},
+            {0.5f, -1.0f, 0.5f, 0.0f}
+        };
+        
+        for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
+        {                
+            lightsData_.spotLights[i].position = glm::vec4(streetlightLightPositions[i], 0.0f);
+            lightsData_.spotLights[i].direction = glm::vec3(0, -1, 0);
+            lightsData_.spotLights[i].exponent = 6.0f;
+            lightsData_.spotLights[i].openingAngle = 60.f;        
+        }
+        
+        // Initialisation des paramètres de lumière des phares
+        
+        lightsData_.spotLights[N_STREETLIGHTS].position = glm::vec4(-1.6, 0.64, -0.45, 0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS].direction = glm::vec3(-10, -1, 0);
+        lightsData_.spotLights[N_STREETLIGHTS].exponent = 4.0f;
+        lightsData_.spotLights[N_STREETLIGHTS].openingAngle = 30.f;
+            
+        lightsData_.spotLights[N_STREETLIGHTS+1].position = glm::vec4(-1.6, 0.64, 0.45, 0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+1].direction = glm::vec3(-10, -1, 0);
+        lightsData_.spotLights[N_STREETLIGHTS+1].exponent = 4.0f;
+        lightsData_.spotLights[N_STREETLIGHTS+1].openingAngle = 30.f;
+            
+        lightsData_.spotLights[N_STREETLIGHTS+2].position = glm::vec4(1.6, 0.64, -0.45, 0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+2].direction = glm::vec3(10, -1, 0);
+        lightsData_.spotLights[N_STREETLIGHTS+2].exponent = 4.0f;
+        lightsData_.spotLights[N_STREETLIGHTS+2].openingAngle = 60.f;
+                   
+        lightsData_.spotLights[N_STREETLIGHTS+3].position = glm::vec4(1.6, 0.64, 0.45, 0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+3].direction = glm::vec3(10, -1, 0);
+        lightsData_.spotLights[N_STREETLIGHTS+3].exponent = 4.0f;
+        lightsData_.spotLights[N_STREETLIGHTS+3].openingAngle = 60.f;
+        
+        
+        toggleStreetlight();
+        updateCarLight();
+        
+        setLightingUniform();
+        
+        lights_.allocate(&lightsData_, sizeof(lightsData_));
+        lights_.setBindingIndex(1);
+        
+        CHECK_GL_ERROR;
+
         loadModels();
 	}
+
+    // TODO: À supprimer, tout ce qui gère le chargement des shaders.
+	//       Le chargement est fait dans la classe ShaderProgram.
+    
 	
 	    
     void checkShaderCompilingError(const char* name, GLuint id)
@@ -137,19 +331,12 @@ struct App : public OpenGLApplication
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
         ImGui::End();
         
-        switch (currentScene_)
-        {
-            case 0: sceneShape();  break;
-            case 1: sceneModels(); break;
-        }
+        sceneModels();
 	}
 
 	// Appelée lorsque la fenêtre se ferme.
 	void onClose() override
 	{
-        glDeleteVertexArrays(1, &vao_);
-        glDeleteBuffers(1, &vbo_);
-        glDeleteBuffers(1, &ebo_);
         glDeleteProgram(basicSP_);
         glDeleteProgram(transformSP_);
 	}
@@ -254,9 +441,26 @@ struct App : public OpenGLApplication
         car_.loadModels();
         tree_.load("../models/pine.ply");
         streetlight_.load("../models/streetlight.ply");
+        streetlightLight_.load("../models/streetlight_light.ply");
+        skybox_.load("../models/skybox.ply");
+        // TODO: Ajouter le chargement du sol et de la route avec la nouvelle méthode load
+        //       des modèles. Voir "model_data.hpp".
         grass_.load("../models/grass.ply");
         street_.load("../models/street.ply");
         streetcorner_.load("../models/streetcorner.ply");
+    }
+
+    // Méthode pour le calcul des matrices initiales des arbres et des lampadaires.
+    void initStaticModelMatrices()
+    {
+        // ...
+        for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
+        {
+            // ...
+            
+            // TODO: À ajouter. C'est pour avoir la position de la lumière du lampadaire pour la partie 3.
+            streetlightLightPositions[i] = glm::vec3(streetlightModelMatrices_[i] * glm::vec4(-2.77, 5.2, 0.0, 1.0));
+        }
     }
     
     GLuint loadShaderObject(GLenum type, const char* path)
@@ -318,80 +522,10 @@ struct App : public OpenGLApplication
         car_.mvpUniformLocation = glGetUniformLocation(transformSP_, "mvp");
     }
 
-    void generateNgon()
-    {
-        const float RADIUS = 0.7f;
-        // change the color for each vertex
-        static constexpr Color colorsLookup[3] = { 
-            { 1.0f, 0.0f, 0.0f, 1.0f },
-            { 0.0f, 1.0f, 0.0f, 1.0f },
-            { 0.0f, 0.0f, 1.0f, 1.0f } 
-        };
-        for (int i = 0; i < nSide_; i++)
-        {
-            float angle = 2 * std::numbers::pi * i / nSide_;
-            vertices_[i] = { 
-                .pos = { RADIUS * std::sin(angle), RADIUS * std::cos(angle) },
-                .color = colorsLookup[i % 3]
-            };
-        }
-        vertices_[nSide_] = { .pos = { 0.0f, 0.0f }, .color = { 1.0f, 1.0f, 1.0f, 1.0f } };
-        for (int i = 0, offset = 0; i < nSide_; i++)
-        {
-            // connection indexes (counter clockwise to avoid culling)
-            elements_[offset++] = nSide_; // center
-            elements_[offset++] = (i + 1) % nSide_; // next
-            elements_[offset++] = i; // current
-        }
-    }
-
-    void initShapeData()
-    {
-        glGenVertexArrays(1, &vao_);
-        glBindVertexArray(vao_);
-
-        glGenBuffers(1, &vbo_);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_), vertices_, GL_STATIC_DRAW);
-
-        glVertexAttribPointer(0, N_VALUES_PER_POS, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-        glEnableVertexAttribArray(0);
-
-        glVertexAttribPointer(1, N_VALUES_PER_COLOR, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) sizeof(Pos));
-        glEnableVertexAttribArray(1);
-
-        glGenBuffers(1, &ebo_);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements_), elements_, GL_STATIC_DRAW);
-
-        glBindVertexArray(0);
-    }
-    
-    void sceneShape()
-    {
-        ImGui::Begin("Scene Parameters");
-        ImGui::SliderInt("Sides", &nSide_, MIN_N_SIDES, MAX_N_SIDES);
-        ImGui::End();
-        
-        bool hasNumberOfSidesChanged = nSide_ != oldNSide_;
-        if (hasNumberOfSidesChanged)
-        {
-            oldNSide_ = nSide_;
-            generateNgon();
-
-            glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices_), vertices_);
-
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(elements_), elements_);
-        }
-        glUseProgram(basicSP_);
-        glBindVertexArray(vao_);
-        glDrawElements(GL_TRIANGLES, nSide_ * 3, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
-    }
-    
-    void drawStreetlights(glm::mat4& projView)
+    // TODO: À modifier, ajouter les textures, et l'effet de contour.
+    //       De plus, le modèle a été séparé en deux (pour la partie 3), adapter
+    //       votre code pour faire le dessin des deux parties.
+    void drawStreetlights(glm::mat4& projView, glm::mat4& view)
     {
         glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -405,6 +539,15 @@ struct App : public OpenGLApplication
             for (int i = 0; i < 2; ++i) {
                 float zPos = (i == 0) ? -SPACING : SPACING;
 
+                if (!isDay_)
+                    setMaterial(streetlightLightMat);
+                else
+                    setMaterial(streetlightMat);
+                // TODO: Dessin du mesh de la lumière.
+            
+                setMaterial(streetlightMat);
+                // TODO: Dessin du mesh du lampadaire.
+
                 glm::mat4 model = glm::mat4(1.0f);
                 model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
                 model = glm::translate(model, glm::vec3(zPos, HEIGHT, OFFSET));
@@ -417,7 +560,8 @@ struct App : public OpenGLApplication
         }
     }
     
-    void drawTree(glm::mat4& projView)
+        // TODO: À modifier, ajouter les textures, et l'effet de contour.
+    void drawTree(glm::mat4& projView, glm::mat4& view)
     {
         glDisable(GL_CULL_FACE);
 
@@ -431,8 +575,16 @@ struct App : public OpenGLApplication
         glEnable(GL_CULL_FACE);
     }
     
-    void drawGround(glm::mat4& projView)
+    // TODO: À modifier, ajouter les textures
+    void drawGround(glm::mat4& projView, glm::mat4& view)
     {
+        // ...
+        setMaterial(streetMat);
+        // TODO: Dessin de la route.
+        
+        // ...
+        setMaterial(grassMat);
+        // TODO: Dessin du sol.  
         glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
 
         // offset ground by -0.1 to avoid overlap (depth buffer doesnt know which surface is in front)
@@ -488,6 +640,128 @@ struct App : public OpenGLApplication
         
         return view;
     }
+
+    void setLightingUniform()
+    {
+        celShadingShader_.use();
+        glUniform1i(celShadingShader_.nSpotLightsULoc, N_STREETLIGHTS+4);
+        
+        float ambientIntensity = 0.05;
+        glUniform3f(celShadingShader_.globalAmbientULoc, ambientIntensity, ambientIntensity, ambientIntensity);
+    }
+
+    // TODO: À ajouter. Pas de modification.
+    void toggleSun()
+    {
+        if (isDay_)
+        {
+            lightsData_.dirLight.ambient = glm::vec4(0.2f, 0.2f, 0.2f, 0.0f); 
+            lightsData_.dirLight.diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
+            lightsData_.dirLight.specular = glm::vec4(0.5f, 0.5f, 0.5f, 0.0f);
+        }
+        else
+        {
+            lightsData_.dirLight.ambient = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f); 
+            lightsData_.dirLight.diffuse = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+            lightsData_.dirLight.specular = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+        }
+    }
+    
+    // TODO: À ajouter. Pas de modification.
+    void toggleStreetlight()
+    {
+        if (isDay_)
+        {
+            for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
+            {
+                lightsData_.spotLights[i].ambient = glm::vec4(glm::vec3(0.0f), 0.0f);
+                lightsData_.spotLights[i].diffuse = glm::vec4(glm::vec3(0.0f), 0.0f);
+                lightsData_.spotLights[i].specular = glm::vec4(glm::vec3(0.0f), 0.0f);
+            }
+        }
+        else
+        {
+            for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
+            {
+                lightsData_.spotLights[i].ambient = glm::vec4(glm::vec3(0.02f), 0.0f);
+                lightsData_.spotLights[i].diffuse = glm::vec4(glm::vec3(0.8f), 0.0f);
+                lightsData_.spotLights[i].specular = glm::vec4(glm::vec3(0.4f), 0.0f);
+            }
+        }
+    }
+
+    // TODO: À ajouter.
+    void updateCarLight()
+    {
+        if (car_.isHeadlightOn)
+        {
+            lightsData_.spotLights[N_STREETLIGHTS].ambient = glm::vec4(glm::vec3(0.01), 0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS].diffuse = glm::vec4(glm::vec3(1.0), 0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS].specular = glm::vec4(glm::vec3(0.4), 0.0f);
+            
+            lightsData_.spotLights[N_STREETLIGHTS+1].ambient = glm::vec4(glm::vec3(0.01), 0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+1].diffuse = glm::vec4(glm::vec3(1.0), 0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+1].specular = glm::vec4(glm::vec3(0.4), 0.0f);
+            
+            // TODO: Partie 3.
+            //       Utiliser car_.carModel pour calculer la nouvelle position et orientation de la lumière.
+            //       La lumière devrait suivre le véhicule qui se déplace.
+            
+            lightsData_.spotLights[N_STREETLIGHTS].position = glm::vec4(-1.6, 0.64, -0.45, 1.0f);
+            lightsData_.spotLights[N_STREETLIGHTS].direction = glm::vec3(-10, -1, 0);
+            
+            lightsData_.spotLights[N_STREETLIGHTS+1].position = glm::vec4(-1.6, 0.64, 0.45, 1.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+1].direction = glm::vec3(-10, -1, 0);
+        }
+        else
+        {
+            lightsData_.spotLights[N_STREETLIGHTS].ambient = glm::vec4(0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS].diffuse = glm::vec4(0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS].specular = glm::vec4(0.0f);
+            
+            lightsData_.spotLights[N_STREETLIGHTS+1].ambient = glm::vec4(0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+1].diffuse = glm::vec4(0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+1].specular = glm::vec4(0.0f);
+        }
+        
+        if (car_.isBraking)
+        {
+            lightsData_.spotLights[N_STREETLIGHTS+2].ambient = glm::vec4(0.01, 0.0, 0.0, 0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+2].diffuse = glm::vec4(0.9, 0.1, 0.1, 0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+2].specular = glm::vec4(0.35, 0.05, 0.05, 0.0f);
+            
+            lightsData_.spotLights[N_STREETLIGHTS+3].ambient = glm::vec4(0.01, 0.0, 0.0, 0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+3].diffuse = glm::vec4(0.9, 0.1, 0.1, 0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+3].specular = glm::vec4(0.35, 0.05, 0.05, 0.0f);
+            
+            // TODO: Partie 3.
+            //       Utiliser car_.carModel pour calculer la nouvelle position et orientation de la lumière.
+            //       La lumière devrait suivre le véhicule qui se déplace.
+            
+            lightsData_.spotLights[N_STREETLIGHTS+2].position = glm::vec4(1.6, 0.64, -0.45, 1.0f);        
+            lightsData_.spotLights[N_STREETLIGHTS+2].direction = glm::vec3(10, -1, 0);
+            
+            lightsData_.spotLights[N_STREETLIGHTS+3].position = glm::vec4(1.6, 0.64, 0.45, 1.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+3].direction = glm::vec3(10, -1, 0);
+        }
+        else
+        {
+            lightsData_.spotLights[N_STREETLIGHTS+2].ambient = glm::vec4(0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+2].diffuse = glm::vec4(0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+2].specular = glm::vec4(0.0f);
+            
+            lightsData_.spotLights[N_STREETLIGHTS+3].ambient = glm::vec4(0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+3].diffuse = glm::vec4(0.0f);
+            lightsData_.spotLights[N_STREETLIGHTS+3].specular = glm::vec4(0.0f);
+        }
+    }
+
+    // TODO: À ajouter. Pas de modification.
+    void setMaterial(Material& mat)
+    {
+        // Ça vous donne une idée de comment utiliser les ubo dans car.cpp.
+        material_.updateData(&mat, 0, sizeof(Material));
+    }
     
     glm::mat4 getPerspectiveProjectionMatrix()
     {
@@ -498,6 +772,59 @@ struct App : public OpenGLApplication
         
         return glm::perspective(fov, aspect, near, far);
     }
+
+    // TODO: À ajouter et modifier.
+    //       Ajouter les textures, les skyboxes, les fenêtres de la voiture,
+    //       les effets de contour, etc.
+    void sceneMain()
+    {    
+        ImGui::Begin("Scene Parameters");
+        if (ImGui::Button("Toggle Day/Night"))
+        {
+            isDay_ = !isDay_;
+            toggleSun();
+            toggleStreetlight();
+            lights_.updateData(&lightsData_, 0, sizeof(DirectionalLight) + N_STREETLIGHTS * sizeof(SpotLight));
+        }
+        ImGui::SliderFloat("Car Speed", &car_.speed, -10.0f, 10.0f, "%.2f m/s");
+        ImGui::SliderFloat("Steering Angle", &car_.steeringAngle, -30.0f, 30.0f, "%.2f°");
+        if (ImGui::Button("Reset Steering"))
+            car_.steeringAngle = 0.f;
+        ImGui::Checkbox("Headlight", &car_.isHeadlightOn);
+        ImGui::Checkbox("Left Blinker", &car_.isLeftBlinkerActivated);
+        ImGui::Checkbox("Right Blinker", &car_.isRightBlinkerActivated);
+        ImGui::Checkbox("Brake", &car_.isBraking);
+        ImGui::End();
+    
+        updateCameraInput();
+        car_.update(deltaTime_);
+        
+        updateCarLight();
+        lights_.updateData(&lightsData_.spotLights[N_STREETLIGHTS], sizeof(DirectionalLight) + N_STREETLIGHTS * sizeof(SpotLight), 4 * sizeof(SpotLight));
+                
+        glm::mat4 view = getViewMatrix();
+        glm::mat4 proj = getPerspectiveProjectionMatrix();
+        glm::mat4 projView = proj * view;
+        
+        // TODO: Dessin des éléments
+        // ...
+        // Penser à votre ordre de dessin, les todos sont volontairement mélangé ici.
+        
+        setMaterial(windowMat);
+        // TODO: Dessin des fenêtres
+        
+        setMaterial(defaultMat);
+        // TODO: Dessin de l'automobile
+        
+        // TODO: Dessin du skybox
+        
+        setMaterial(grassMat);
+        // TODO: Dessin des arbres. Oui, ils utilisent le même matériel que le sol.
+        
+        setMaterial(streetlightMat);
+        // TODO: Dessin des lampadaires.
+    }
+
     
     void sceneModels()
     {
@@ -520,10 +847,10 @@ struct App : public OpenGLApplication
         glm::mat4 projView = proj * view;
 
         glUseProgram(transformSP_);
-        drawGround(projView);
-        drawTree(projView);
-        drawStreetlights(projView);
-        car_.draw(projView);
+        drawGround(projView, view);
+        drawTree(projView, view);
+        drawStreetlights(projView, view);
+        car_.draw(projView, view);
     }
     
 private:
@@ -533,41 +860,62 @@ private:
     GLuint colorModUniformLocation_;
     GLuint mvpUniformLocation_;
     
-    // Partie 1
-    GLuint vbo_, ebo_, vao_;
+    Car car_;
     
-    static constexpr unsigned int MIN_N_SIDES = 5;
-    static constexpr unsigned int MAX_N_SIDES = 12;
+    // Matrices statiques
+    static constexpr unsigned int N_STREET_PATCHES = 7*4+4;
+    glm::mat4 treeModelMatrice_;
+    glm::mat4 groundModelMatrice_;
+    glm::mat4 streetPatchesModelMatrices_[N_STREET_PATCHES];
     
-    Vertex vertices_[MAX_N_SIDES + 1];
-    GLuint elements_[MAX_N_SIDES * 3];
+    // Shaders
+    EdgeEffect edgeEffectShader_;
+    CelShading celShadingShader_;
+    Sky skyShader_;
     
-    int nSide_, oldNSide_;
+    // Textures
+    Texture2D grassTexture_;
+    Texture2D streetTexture_;
+    Texture2D streetcornerTexture_;
+    Texture2D carTexture_;
+    Texture2D carWindowTexture_;
+    Texture2D treeTexture_;
+    Texture2D streetlightTexture_;
+    Texture2D streetlightLightTexture_;
+    TextureCubeMap skyboxTexture_;
+    TextureCubeMap skyboxNightTexture_;
     
-    // Partie 2
+    // Uniform buffers
+    UniformBuffer material_;
+    UniformBuffer lights_;
+
+        struct {
+        DirectionalLight dirLight;
+        SpotLight spotLights[16];
+    } lightsData_;
+    
+    bool isDay_;
+    
     Model tree_;
     Model streetlight_;
+    Model streetlightLight_;
     Model grass_;
     Model street_;
     Model streetcorner_;
-    
-    Car car_;
+    Model skybox_;
     
     glm::vec3 cameraPosition_;
     glm::vec2 cameraOrientation_;
     
-    // Matrices statiques
-    static constexpr unsigned int N_STREETLIGHTS = 2*4;
-    static constexpr unsigned int N_STREET_PATCHES = 7*4+4;
-    glm::mat4 treeModelMatrice_;
-    glm::mat4 groundModelMatrice_;
+    static constexpr unsigned int N_TREES = 1;
+    glm::mat4 treeModelMatrices_[N_TREES];
+    static constexpr unsigned int N_STREETLIGHTS = 8;
     glm::mat4 streetlightModelMatrices_[N_STREETLIGHTS];
-    glm::mat4 streetPatchesModelMatrices_[N_STREET_PATCHES];
+    glm::vec3 streetlightLightPositions[N_STREETLIGHTS];
     
     // Imgui var
-    const char* const SCENE_NAMES[2] = {
-        "Introduction",
-        "3D Model & transformation",
+    const char* const SCENE_NAMES[1] = {
+        "Main scene"
     };
     const int N_SCENE_NAMES = sizeof(SCENE_NAMES) / sizeof(SCENE_NAMES[0]);
     int currentScene_;
@@ -588,5 +936,5 @@ int main(int argc, char* argv[])
 	settings.context.attributeFlags = sf::ContextSettings::Attribute::Core;
 
 	App app;
-	app.run(argc, argv, "Tp1", settings);
+	app.run(argc, argv, "Tp2", settings);
 }

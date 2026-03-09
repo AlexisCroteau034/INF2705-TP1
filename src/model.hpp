@@ -12,6 +12,7 @@ public:
     ~Model();
     
     void draw();
+    void load(float* vertices, size_t verticesSize, unsigned int* elements, size_t elementsSize);
 
 private:
     GLuint vao_, vbo_, ebo_;
