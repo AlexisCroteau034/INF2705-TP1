@@ -10,7 +10,19 @@
 using namespace gl;
 using namespace glm;
 
-    
+#include <map>
+
+#include "shaders.hpp"
+
+struct Material
+{
+    glm::vec4 emission; // vec3, but padded
+    glm::vec4 ambient;  // vec3, but padded
+    glm::vec4 diffuse;  // vec3, but padded
+    glm::vec3 specular;
+    GLfloat shininess;
+};
+
 Car::Car()
 : position(0.0f, 0.0f, 0.0f), orientation(0.0f, 0.0f), speed(0.f)
 , wheelsRollAngle(0.f), steeringAngle(0.f)
@@ -25,6 +37,19 @@ void Car::loadModels()
     wheel_.load("../models/wheel.ply");
     blinker_.load("../models/blinker.ply");
     light_.load("../models/light.ply");
+    const char* WINDOW_MODEL_PATHES[] = 
+    {
+        "../models/window.f.ply",
+        "../models/window.r.ply",
+        "../models/window.fl.ply",
+        "../models/window.fr.ply",
+        "../models/window.rl.ply",
+        "../models/window.rr.ply"
+    };
+    for (unsigned int i = 0; i < 6; ++i)
+    {
+        windows[i].load(WINDOW_MODEL_PATHES[i]);
+    }
 }
 
 void Car::update(float deltaTime)
@@ -73,7 +98,10 @@ void Car::update(float deltaTime)
     {
         isBlinkerOn = true;
         blinkerTimer = 0.f;
-    }  
+    }
+    carModel = glm::mat4(1.0f);
+    carModel = glm::translate(carModel, position);
+    carModel = glm::rotate(carModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void Car::draw(glm::mat4& projView)
@@ -152,11 +180,23 @@ void Car::drawBlinker(const glm::mat4& projView, const glm::mat4& headlightModel
     if (isBlinkerOn && isBlinkerActivated)
     {
         glUniform4f(colorModUniformLocation, ON_COLOR.x, ON_COLOR.y, ON_COLOR.z, 1.0f);
+        //    TODO: Modifier le matériel pour qu'il ait l'air d'émettre de la lumière.
+        //    ... = glm::vec4(ON_COLOR, 0.0f);
+        // TODO: Envoyer le matériel au shader. Partie 3.
     }
     else
     {
         glUniform4f(colorModUniformLocation, OFF_COLOR.x, OFF_COLOR.y, OFF_COLOR.z, 1.0f);
     }
+    // TODO: À ajouter dans votre méthode. À compléter pour la partie 3.
+    Material blinkerMat = 
+    {
+        {0.0f, 0.0f, 0.0f, 0.0f},
+        {OFF_COLOR, 0.0f},
+        {OFF_COLOR, 0.0f},
+        {OFF_COLOR},
+        10.0f
+    };
     glm::mat4 model = glm::translate(headlightModel, glm::vec3(0.0f, 0.0f, -0.06065f));
     glm::mat4 mvp = projView * model;
     glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, glm::value_ptr(mvp));
@@ -172,12 +212,40 @@ void Car::drawLight(const glm::mat4& projView, const glm::mat4& headLightModel, 
 
     const float Z_OFFSET = 0.029;
 
+    Material lightFrontMat = 
+    {
+        {0.0f, 0.0f, 0.0f, 0.0f},
+        {FRONT_OFF_COLOR, 0.0f},
+        {FRONT_OFF_COLOR, 0.0f},
+        {FRONT_OFF_COLOR},
+        10.0f
+    };
+    
+    Material lightRearMat = 
+    {
+        {0.0f, 0.0f, 0.0f, 0.0f},
+        {REAR_OFF_COLOR, 0.0f},
+        {REAR_OFF_COLOR, 0.0f},
+        {REAR_OFF_COLOR},
+        10.0f
+    };
+
     glm::vec3 color;
 
     if (isFrontHeadlight) {
         color = isHeadlightOn ? FRONT_ON_COLOR : FRONT_OFF_COLOR;
+        // if (isHeadlightOn)
+        //    TODO: Modifier le matériel pour qu'il ait l'air d'émettre de la lumière.
+        //    ... = glm::vec4(FRONT_ON_COLOR, 0);
+   
+        // TODO: Envoyer le matériel au shader. Partie 3.
     } else {
         color = isBraking ? REAR_ON_COLOR : REAR_OFF_COLOR;
+        // if (isBraking)
+        //    TODO: Modifier le matériel pour qu'il ait l'air d'émettre de la lumière.
+        //    ... = glm::vec4(REAR_ON_COLOR, 0);
+            
+        // TODO: Envoyer le matériel au shader. Partie 3.
     }
 
     glm::mat4 model = glm::translate(headLightModel, glm::vec3(0.0f, 0.0f, Z_OFFSET));
@@ -226,5 +294,45 @@ void Car::drawHeadlights(const glm::mat4& projView, const glm::mat4& carModel)
         }
 
         drawHeadlight(projView, model, isFrontHeadlight, isLeftHeadlight);
+    }
+}
+
+void Car::drawWindows(glm::mat4& projView, glm::mat4& view)
+{
+    const glm::vec3 WINDOW_POSITION[] =
+    {
+        glm::vec3(-0.813, 0.755, 0.0),
+        glm::vec3(1.092, 0.761, 0.0),
+        glm::vec3(-0.3412, 0.757, 0.51),
+        glm::vec3(-0.3412, 0.757, -0.51),
+        glm::vec3(0.643, 0.756, 0.508),
+        glm::vec3(0.643, 0.756, -0.508)
+    };
+    
+    // TODO: À ajouter et compléter.
+    //       Dessiner les vitres de la voiture. Celles-ci ont une texture transparente,
+    //       il est donc nécessaire d'activer le mélange des couleurs (GL_BLEND).
+    //       De plus, vous devez dessiner les fenêtres du plus loin vers le plus proche
+    //       pour éviter les problèmes de mélange.
+    //       Utiliser un map avec la distance en clef pour trier les fenêtres (les maps trient
+    //       à l'insertion).
+    //       Les fenêtres doivent être visibles des deux sens.
+    //       Il est important de restaurer l'état du contexte qui a été modifié à la fin de la méthode.
+    
+    
+    // Les fenêtres sont par rapport au chassi, à considérer dans votre matrice
+    // model = glm::translate(model, glm::vec3(0.0f, 0.25f, 0.0f));
+    
+    std::map<float, unsigned int> sorted;
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        // TODO: Calcul de la distance par rapport à l'observateur (utiliser la matrice de vue!)
+        //       et faite une insertion dans le map
+    }
+    
+    // TODO: Itération à l'inverse (de la plus grande distance jusqu'à la plus petit)
+    for (std::map<float, unsigned int>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
+    {
+        // TODO: Dessin des fenêtres
     }
 }
