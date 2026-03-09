@@ -180,9 +180,10 @@ struct App : public OpenGLApplication
         // Partie 1
         
         // TODO:
-        // Création des shaders program.
-        // Fait appel à la méthode "create()".
-        
+        // Création des shaders program. Fait appel à la méthode "create()".
+        edgeEffectShader_.create();
+        celShadingShader_.create();
+        skyShader_.create();
         
         // TODO: À ajouter.
         car_.edgeEffectShader = &edgeEffectShader_;
@@ -287,40 +288,6 @@ struct App : public OpenGLApplication
         loadModels();
 	}
 
-    // TODO: À supprimer, tout ce qui gère le chargement des shaders.
-	//       Le chargement est fait dans la classe ShaderProgram.
-    
-	
-	    
-    void checkShaderCompilingError(const char* name, GLuint id)
-    {
-        GLint success;
-        GLchar infoLog[1024];
-
-        glGetShaderiv(id, GL_COMPILE_STATUS, &success);
-        if (!success)
-        {
-            glGetShaderInfoLog(id, 1024, NULL, infoLog);
-            glDeleteShader(id);
-            std::cout << "Shader \"" << name << "\" compile error: " << infoLog << std::endl;
-        }
-    }
-
-
-    void checkProgramLinkingError(const char* name, GLuint id)
-    {
-        GLint success;
-        GLchar infoLog[1024];
-
-        glGetProgramiv(id, GL_LINK_STATUS, &success);
-        if (!success)
-        {
-            glGetProgramInfoLog(id, 1024, NULL, infoLog);
-            glDeleteProgram(id);
-            std::cout << "Program \"" << name << "\" linking error: " << infoLog << std::endl;
-        }
-    }
-	
 
 	// Appelée à chaque trame. Le buffer swap est fait juste après.
 	void drawFrame() override
@@ -337,7 +304,6 @@ struct App : public OpenGLApplication
 	// Appelée lorsque la fenêtre se ferme.
 	void onClose() override
 	{
-        glDeleteProgram(transformSP_);
 	}
 
 	// Appelée lors d'une touche de clavier.
@@ -462,52 +428,11 @@ struct App : public OpenGLApplication
         }
     }
     
-    GLuint loadShaderObject(GLenum type, const char* path)
-    {
-		GLuint shader = glCreateShader(type);
-
-		std::string srcStd = readFile(path).c_str();
-        const char* srcC = srcStd.c_str();
-
-		glShaderSource(shader, 1, &srcC, nullptr);
-		glCompileShader(shader);
-		checkShaderCompilingError(path, shader);
-        return shader;
-    }
-    
-    void loadShaderPrograms()
-    {
-        const char* TRANSFORM_VERTEX_SRC_PATH = "./shaders/transform.vs.glsl";
-        const char* TRANSFORM_FRAGMENT_SRC_PATH = "./shaders/transform.fs.glsl";
-
-        transformSP_ = glCreateProgram();
-
-		GLuint transformVertShader = loadShaderObject(GL_VERTEX_SHADER, TRANSFORM_VERTEX_SRC_PATH);
-		glAttachShader(transformSP_, transformVertShader);
-		GLuint transformFragShader = loadShaderObject(GL_FRAGMENT_SHADER, TRANSFORM_FRAGMENT_SRC_PATH);
-		glAttachShader(transformSP_, transformFragShader);
-        
-        glLinkProgram(transformSP_);
-        checkProgramLinkingError("transformSP_", transformSP_);
-
-        glDetachShader(transformSP_, transformVertShader);
-        glDeleteShader(transformVertShader);
-        glDetachShader(transformSP_, transformFragShader);
-        glDeleteShader(transformFragShader);
-
-        colorModUniformLocation_ = glGetUniformLocation(transformSP_, "colorMod");
-        car_.colorModUniformLocation = glGetUniformLocation(transformSP_, "colorMod");
-        mvpUniformLocation_ = glGetUniformLocation(transformSP_, "mvp");
-        car_.mvpUniformLocation = glGetUniformLocation(transformSP_, "mvp");
-    }
-
     // TODO: À modifier, ajouter les textures, et l'effet de contour.
     //       De plus, le modèle a été séparé en deux (pour la partie 3), adapter
     //       votre code pour faire le dessin des deux parties.
     void drawStreetlights(glm::mat4& projView, glm::mat4& view)
     {
-        glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
-
         const float OFFSET = 17.0f;
         const float HEIGHT = -0.15f;
         const float SPACING = 10.0f;
@@ -533,23 +458,22 @@ struct App : public OpenGLApplication
                 model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
                 glm::mat4 mvp = projView * model;
-                glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(mvp));
+                celShadingShader_.setMatrices(mvp, view, model);
                 streetlight_.draw();
             }
         }
     }
     
-        // TODO: À modifier, ajouter les textures, et l'effet de contour.
+    // TODO: À modifier, ajouter les textures, et l'effet de contour.
     void drawTree(glm::mat4& projView, glm::mat4& view)
     {
         glDisable(GL_CULL_FACE);
 
-        glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
         glm::mat4 treeModel =  glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.1f, 1.0f));
         treeModel = glm::scale(treeModel, glm::vec3(15.0f, 15.0f, 15.0f));
 
         glm::mat4 treeMVP = projView * treeModel;
-        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(treeMVP));
+        celShadingShader_.setMatrices(treeMVP, view, treeModel);
         tree_.draw();
         glEnable(GL_CULL_FACE);
     }
@@ -564,14 +488,13 @@ struct App : public OpenGLApplication
         // ...
         setMaterial(grassMat);
         // TODO: Dessin du sol.  
-        glUniform4f(colorModUniformLocation_, 1.0f, 1.0f, 1.0f, 1.0f);
 
         // offset ground by -0.1 to avoid overlap (depth buffer doesnt know which surface is in front)
         glm::mat4 grassModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
         grassModel = glm::scale(grassModel, glm::vec3(50.0f, 1.0f, 50.0f));
 
         glm::mat4 grassMVP = projView * grassModel;
-        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(grassMVP));
+        celShadingShader_.setMatrices(grassMVP, view, grassModel);
         grass_.draw();
 
         const float ROAD_OFFSET = 20.0f;
@@ -590,7 +513,7 @@ struct App : public OpenGLApplication
                 roadModel = glm::scale(roadModel, glm::vec3(5.0f, 1.0f, 5.0f));
 
                 glm::mat4 roadMVP = projView * roadModel;
-                glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(roadMVP));
+                celShadingShader_.setMatrices(roadMVP, view, roadModel);
                 street_.draw();
             }
         }
@@ -604,7 +527,7 @@ struct App : public OpenGLApplication
             cornerModel = glm::scale(cornerModel, glm::vec3(5.0f, 1.0f, 5.0f));
 
             glm::mat4 cornerMVP = projView * cornerModel;
-            glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(cornerMVP));
+            celShadingShader_.setMatrices(cornerMVP, view, cornerModel);
             streetcorner_.draw();
         }
     }
@@ -825,7 +748,7 @@ struct App : public OpenGLApplication
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
 
-        glUseProgram(transformSP_);
+        celShadingShader_.use();
         drawGround(projView, view);
         drawTree(projView, view);
         drawStreetlights(projView, view);
@@ -833,10 +756,6 @@ struct App : public OpenGLApplication
     }
     
 private:
-    // Shaders
-    GLuint transformSP_;
-    GLuint colorModUniformLocation_;
-    GLuint mvpUniformLocation_;
     
     Car car_;
     

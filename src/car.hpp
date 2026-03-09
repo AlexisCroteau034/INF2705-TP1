@@ -24,15 +24,15 @@ public:
     
 private:
     // TODO: Adapter les paramètres des méthodes privée ici au besoin, surtout pour la partie 3.
-    void drawFrame(glm::mat4& projView, glm::mat4& carModel);
+    void drawFrame(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel);
     
-    void drawWheel(const glm::mat4& projView, const glm::mat4& carModel, const bool isRight, const bool isFront);
-    void drawWheels(const glm::mat4& projView, const glm::mat4& carModel);
+    void drawWheel(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel, const bool isRight, const bool isFront);
+    void drawWheels(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel);
     
-    void drawBlinker(const glm::mat4& projView, const glm::mat4& headLightModel, bool isLeftHeadlight);
-    void drawLight(const glm::mat4& projView, const glm::mat4& headLightModel, bool isFrontHeadlight);    
-    void drawHeadlight(const glm::mat4& projView, const glm::mat4& carModel, bool isFrontHeadlight, bool isLeftHeadlight);
-    void drawHeadlights(const glm::mat4& projView, const glm::mat4& carModel);
+    void drawBlinker(glm::mat4& projView, glm::mat4& view, glm::mat4& headLightModel, bool isLeftHeadlight);
+    void drawLight(glm::mat4& projView, glm::mat4& view, glm::mat4& headLightModel, bool isFrontHeadlight);
+    void drawHeadlight(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel, bool isFrontHeadlight, bool isLeftHeadlight);
+    void drawHeadlights(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel);
     
 private:    
     Model windows[6];
@@ -61,7 +61,4 @@ public:
     
     bool isBlinkerOn;
     float blinkerTimer;
-    
-    GLuint colorModUniformLocation;
-    GLuint mvpUniformLocation;
 };

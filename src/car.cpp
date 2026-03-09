@@ -110,21 +110,20 @@ void Car::draw(glm::mat4& projView, glm::mat4& view)
     carModel = glm::translate(carModel, position + glm::vec3(0.0f, 0.0f, -20.0f));
     carModel = glm::rotate(carModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f)); 
     carModel = glm::rotate(carModel, orientation.x, glm::vec3(1.0f, 0.0f, 0.0f)); 
-    glUniform4f(colorModUniformLocation, 1.0f, 1.0f, 1.0f, 1.0f);
-    drawWheels(projView, carModel);
-    drawFrame(projView, carModel);
-    drawHeadlights(projView, carModel);
+    drawWheels(projView, view, carModel);
+    drawFrame(projView, view, carModel);
+    drawHeadlights(projView, view, carModel);
 }
     
-void Car::drawFrame(glm::mat4& projView, glm::mat4& carModel)
+void Car::drawFrame(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel)
 {
     carModel = glm::translate(carModel, glm::vec3(0.0f, 0.25f, 0.0f));
     glm::mat4 frameMVP = projView * carModel;
-    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, glm::value_ptr(frameMVP));
+    celShadingShader->setMatrices(frameMVP, view, carModel);
     frame_.draw();
 }
 
-void Car::drawWheel(const glm::mat4& projView, const glm::mat4& carModel, const bool isLeft, const bool isFront)
+void Car::drawWheel(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel, const bool isLeft, const bool isFront)
 {
     const float OFFSET = -0.10124f;
 
@@ -140,11 +139,11 @@ void Car::drawWheel(const glm::mat4& projView, const glm::mat4& carModel, const 
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, OFFSET));
 
     glm::mat4 mvp = projView * model;
-    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+    celShadingShader->setMatrices(mvp, view, model);
     wheel_.draw();
 }
 
-void Car::drawWheels(const glm::mat4& projView, const glm::mat4& carModel)
+void Car::drawWheels(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel)
 {
     const glm::vec3 WHEEL_POSITIONS[] =
     {
@@ -165,30 +164,17 @@ void Car::drawWheels(const glm::mat4& projView, const glm::mat4& carModel)
             model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         }
 
-        drawWheel(projView, model, isLeft, isFront);
+        drawWheel(projView, view, model, isLeft, isFront);
     }
 }
 
-void Car::drawBlinker(const glm::mat4& projView, const glm::mat4& headlightModel, bool isLeftHeadlight)
+void Car::drawBlinker(glm::mat4& projView, glm::mat4& view, glm::mat4& headlightModel, bool isLeftHeadlight)
 {
     bool isBlinkerActivated = (isLeftHeadlight  && isLeftBlinkerActivated) ||
                               (!isLeftHeadlight && isRightBlinkerActivated);
 
     const glm::vec3 ON_COLOR (1.0f, 0.7f , 0.3f );
-    const glm::vec3 OFF_COLOR(0.5f, 0.35f, 0.15f);
-    
-    if (isBlinkerOn && isBlinkerActivated)
-    {
-        glUniform4f(colorModUniformLocation, ON_COLOR.x, ON_COLOR.y, ON_COLOR.z, 1.0f);
-        //    TODO: Modifier le matériel pour qu'il ait l'air d'émettre de la lumière.
-        //    ... = glm::vec4(ON_COLOR, 0.0f);
-        // TODO: Envoyer le matériel au shader. Partie 3.
-    }
-    else
-    {
-        glUniform4f(colorModUniformLocation, OFF_COLOR.x, OFF_COLOR.y, OFF_COLOR.z, 1.0f);
-    }
-    // TODO: À ajouter dans votre méthode. À compléter pour la partie 3.
+    const glm::vec3 OFF_COLOR (0.5f, 0.35f, 0.15f);
     Material blinkerMat = 
     {
         {0.0f, 0.0f, 0.0f, 0.0f},
@@ -197,13 +183,20 @@ void Car::drawBlinker(const glm::mat4& projView, const glm::mat4& headlightModel
         {OFF_COLOR},
         10.0f
     };
+
+    if (isBlinkerOn && isBlinkerActivated)
+    {
+        blinkerMat.emission = glm::vec4(ON_COLOR, 0.0f);
+    }
+    material->updateData(&blinkerMat, 0, sizeof(Material));
+
     glm::mat4 model = glm::translate(headlightModel, glm::vec3(0.0f, 0.0f, -0.06065f));
     glm::mat4 mvp = projView * model;
-    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+    celShadingShader->setMatrices(mvp, view, model);
     blinker_.draw();
 }
 
-void Car::drawLight(const glm::mat4& projView, const glm::mat4& headLightModel, bool isFrontHeadlight)
+void Car::drawLight(glm::mat4& projView, glm::mat4& view, glm::mat4& headLightModel, bool isFrontHeadlight)
 {
     const glm::vec3 FRONT_ON_COLOR (1.0f, 1.0f, 1.0f);
     const glm::vec3 FRONT_OFF_COLOR(0.5f, 0.5f, 0.5f);
@@ -230,33 +223,26 @@ void Car::drawLight(const glm::mat4& projView, const glm::mat4& headLightModel, 
         10.0f
     };
 
-    glm::vec3 color;
-
     if (isFrontHeadlight) {
-        color = isHeadlightOn ? FRONT_ON_COLOR : FRONT_OFF_COLOR;
-        // if (isHeadlightOn)
-        //    TODO: Modifier le matériel pour qu'il ait l'air d'émettre de la lumière.
-        //    ... = glm::vec4(FRONT_ON_COLOR, 0);
-   
-        // TODO: Envoyer le matériel au shader. Partie 3.
+        if (isHeadlightOn) {
+            lightFrontMat.emission = glm::vec4(FRONT_ON_COLOR, 0.0f);
+        }
+        material->updateData(&lightFrontMat, 0, sizeof(Material));
     } else {
-        color = isBraking ? REAR_ON_COLOR : REAR_OFF_COLOR;
-        // if (isBraking)
-        //    TODO: Modifier le matériel pour qu'il ait l'air d'émettre de la lumière.
-        //    ... = glm::vec4(REAR_ON_COLOR, 0);
-            
-        // TODO: Envoyer le matériel au shader. Partie 3.
+        if (isBraking) {
+            lightRearMat.emission = glm::vec4(REAR_ON_COLOR, 0.0f);
+        }
+        material->updateData(&lightRearMat, 0, sizeof(Material));
     }
 
     glm::mat4 model = glm::translate(headLightModel, glm::vec3(0.0f, 0.0f, Z_OFFSET));
     glm::mat4 mvp = projView * model;
 
-    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, glm::value_ptr(mvp));
-    glUniform4f(colorModUniformLocation, color.r, color.g, color.b, 1.0f);
+    celShadingShader->setMatrices(mvp, view, model);
     light_.draw();
 }
 
-void Car::drawHeadlight(const glm::mat4& projView, const glm::mat4& headLightModel, bool isFrontHeadlight, bool isLeftHeadlight) 
+void Car::drawHeadlight(glm::mat4& projView, glm::mat4& view, glm::mat4& headLightModel, bool isFrontHeadlight, bool isLeftHeadlight) 
 {
     glm::mat4 model = headLightModel;
 
@@ -268,11 +254,11 @@ void Car::drawHeadlight(const glm::mat4& projView, const glm::mat4& headLightMod
         model = glm::rotate(model, glm::radians(-5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     }
 
-    drawLight(projView, model, isFrontHeadlight);
-    drawBlinker(projView, model, isLeftHeadlight);
+    drawLight(projView, view, model, isFrontHeadlight);
+    drawBlinker(projView, view, model, isLeftHeadlight);
 }
 
-void Car::drawHeadlights(const glm::mat4& projView, const glm::mat4& carModel)
+void Car::drawHeadlights(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel)
 {
     const glm::vec3 HEADLIGHT_POSITIONS[] =
     {
@@ -293,7 +279,7 @@ void Car::drawHeadlights(const glm::mat4& projView, const glm::mat4& carModel)
             model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f)); 
         }
 
-        drawHeadlight(projView, model, isFrontHeadlight, isLeftHeadlight);
+        drawHeadlight(projView, view, model, isFrontHeadlight, isLeftHeadlight);
     }
 }
 
