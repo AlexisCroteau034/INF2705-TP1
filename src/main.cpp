@@ -199,12 +199,40 @@ struct App : public OpenGLApplication
         //       des fenêtres de la voiture.
         //       
         //       Le mipmap __ne doit pas__ être activé pour toutes les textures, seulement le sol et la route.
-        //
-       
+        grassTexture_.load("../textures/grass.png");
+        grassTexture_.setWrap(GL_REPEAT);
+        grassTexture_.setFiltering(GL_LINEAR);
+        grassTexture_.enableMipmap();
+
+        streetTexture_.load("../textures/street.png");
+        streetTexture_.setWrap(GL_REPEAT);
+        streetTexture_.setFiltering(GL_LINEAR);
+        streetTexture_.enableMipmap();
+
+        streetcornerTexture_.load("../textures/streetcorner.png");
+        streetcornerTexture_.setWrap(GL_CLAMP_TO_EDGE);
+        streetcornerTexture_.setFiltering(GL_LINEAR);
+
+        carTexture_.load("../textures/car.png");
+        carTexture_.setWrap(GL_CLAMP_TO_EDGE);
+        carTexture_.setFiltering(GL_LINEAR);
+
+        carWindowTexture_.load("../textures/car_window.png");
+        carWindowTexture_.setWrap(GL_CLAMP_TO_EDGE);
+        carWindowTexture_.setFiltering(GL_NEAREST);
+
+        treeTexture_.load("../textures/pine.png");
+        treeTexture_.setWrap(GL_REPEAT);
+        treeTexture_.setFiltering(GL_NEAREST);
+
+        streetlightTexture_.load("../textures/streetlight.png");
+        streetlightTexture_.setWrap(GL_REPEAT);
+        streetlightTexture_.setFiltering(GL_LINEAR);
+
         // Simplement pour réduire l'effet "négatif" du mipmap qui rend la
         // texture flou trop près.
-	    // streetTexture_.use();
-	    // glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
+	    streetTexture_.use();
+	    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
 	    
         
         // TODO: Chargement des deux skyboxes.
@@ -226,6 +254,9 @@ struct App : public OpenGLApplication
             "../textures/skyboxNight/front.png",
             "../textures/skyboxNight/back.png",
         };
+        skyboxTexture_.load(pathes);
+        skyboxNightTexture_.load(nightPathes);
+
         
         loadModels();        
         initStaticModelMatrices();
@@ -707,24 +738,30 @@ struct App : public OpenGLApplication
         glm::mat4 view = getViewMatrix();
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
+        celShadingShader_.use();
         
         // TODO: Dessin des éléments
         // ...
         // Penser à votre ordre de dessin, les todos sont volontairement mélangé ici.
         
-        setMaterial(windowMat);
-        // TODO: Dessin des fenêtres
-        
         setMaterial(defaultMat);
         // TODO: Dessin de l'automobile
+        car_.draw(projView, view);
         
         // TODO: Dessin du skybox
         
         setMaterial(grassMat);
         // TODO: Dessin des arbres. Oui, ils utilisent le même matériel que le sol.
+        drawGround(projView, view);
+        drawTree(projView, view);
         
         setMaterial(streetlightMat);
         // TODO: Dessin des lampadaires.
+        drawStreetlights(projView, view);
+
+        setMaterial(windowMat);
+        // TODO: Dessin des fenêtres
+        
     }
 
     
@@ -748,11 +785,6 @@ struct App : public OpenGLApplication
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
 
-        celShadingShader_.use();
-        drawGround(projView, view);
-        drawTree(projView, view);
-        drawStreetlights(projView, view);
-        car_.draw(projView, view);
     }
     
 private:

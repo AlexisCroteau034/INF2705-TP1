@@ -11,6 +11,16 @@ Texture2D::Texture2D()
 
 }
 
+GLenum getFormat(int nChannels)
+{
+    GLenum format;
+    if (nChannels == 1)
+        return GL_RED;
+    if (nChannels == 3)
+        return GL_RGB;
+    return GL_RGBA;
+}
+
 void Texture2D::load(const char* path)
 {
     int width, height, nChannels;
@@ -24,16 +34,7 @@ void Texture2D::load(const char* path)
     //       Attention au format des pixels de l'image!
     //       Toutes les variables devraient être utilisées (width, height, nChannels, data).
 
-    GLenum format;
-    if (nChannels == 1) {
-        format = GL_RED;
-    }
-    else if (nChannels == 3) {
-        format = GL_RGB;
-    }
-    else {
-        format = GL_RGBA;
-    }
+    GLenum format = getFormat(nChannels);
     glGenTextures(1, &m_id);
     glBindTexture(GL_TEXTURE_2D, m_id);
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
@@ -104,9 +105,20 @@ void TextureCubeMap::load(const char** pathes)
     //       Faites la configuration des min et mag filtering et du wrap S, T, R directement, ils
     //       ne seront pas modifiés ailleurs.
     
+    glGenTextures(1, &m_id);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
     for (unsigned int i = 0; i < 6; i++)
     {
-        // TODO
+        GLenum format = getFormat(nChannels[i]);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format,
+                     widths[i], heights[i], 0, format, GL_UNSIGNED_BYTE, datas[i]);
     }
 
     for (unsigned int i = 0; i < 6; i++)
@@ -117,11 +129,11 @@ void TextureCubeMap::load(const char** pathes)
 
 TextureCubeMap::~TextureCubeMap()
 {
-    // TODO: Libérer les ressources allouées.
+    glDeleteTextures(1, &m_id);
 }
 
 void TextureCubeMap::use()
 {
-    // TODO: Met la texture active pour être utilisée dans les prochaines commandes de dessins.
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
 }
 
