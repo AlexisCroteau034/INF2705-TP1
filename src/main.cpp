@@ -199,17 +199,17 @@ struct App : public OpenGLApplication
         //       des fenêtres de la voiture.
         //       
         //       Le mipmap __ne doit pas__ être activé pour toutes les textures, seulement le sol et la route.
-        grassTexture_.load("../textures/grass.png");
+        grassTexture_.load("../textures/grass.jpg");
         grassTexture_.setWrap(GL_REPEAT);
         grassTexture_.setFiltering(GL_LINEAR);
         grassTexture_.enableMipmap();
 
-        streetTexture_.load("../textures/street.png");
+        streetTexture_.load("../textures/street.jpg");
         streetTexture_.setWrap(GL_REPEAT);
         streetTexture_.setFiltering(GL_LINEAR);
         streetTexture_.enableMipmap();
 
-        streetcornerTexture_.load("../textures/streetcorner.png");
+        streetcornerTexture_.load("../textures/streetcorner.jpg");
         streetcornerTexture_.setWrap(GL_CLAMP_TO_EDGE);
         streetcornerTexture_.setFiltering(GL_LINEAR);
 
@@ -217,15 +217,15 @@ struct App : public OpenGLApplication
         carTexture_.setWrap(GL_CLAMP_TO_EDGE);
         carTexture_.setFiltering(GL_LINEAR);
 
-        carWindowTexture_.load("../textures/car_window.png");
+        carWindowTexture_.load("../textures/window.png");
         carWindowTexture_.setWrap(GL_CLAMP_TO_EDGE);
         carWindowTexture_.setFiltering(GL_NEAREST);
 
-        treeTexture_.load("../textures/pine.png");
+        treeTexture_.load("../textures/pine.jpg");
         treeTexture_.setWrap(GL_REPEAT);
         treeTexture_.setFiltering(GL_NEAREST);
 
-        streetlightTexture_.load("../textures/streetlight.png");
+        streetlightTexture_.load("../textures/streetlight.jpg");
         streetlightTexture_.setWrap(GL_REPEAT);
         streetlightTexture_.setFiltering(GL_LINEAR);
 
@@ -329,7 +329,7 @@ struct App : public OpenGLApplication
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
         ImGui::End();
         
-        sceneModels();
+        sceneMain();
 	}
 
 	// Appelée lorsque la fenêtre se ferme.
@@ -438,12 +438,12 @@ struct App : public OpenGLApplication
         tree_.load("../models/pine.ply");
         streetlight_.load("../models/streetlight.ply");
         streetlightLight_.load("../models/streetlight_light.ply");
-        skybox_.load("../models/skybox.ply");
+        // skybox_.load("../models/skybox.ply");
         // TODO: Ajouter le chargement du sol et de la route avec la nouvelle méthode load
         //       des modèles. Voir "model_data.hpp".
-        grass_.load("../models/grass.ply");
-        street_.load("../models/street.ply");
-        streetcorner_.load("../models/streetcorner.ply");
+        // grass_.load("../models/grass.ply");
+        // street_.load("../models/street.ply");
+        // streetcorner_.load("../models/streetcorner.ply");
     }
 
     // Méthode pour le calcul des matrices initiales des arbres et des lampadaires.
@@ -764,28 +764,6 @@ struct App : public OpenGLApplication
         
     }
 
-    
-    void sceneModels()
-    {
-        ImGui::Begin("Scene Parameters");
-        ImGui::SliderFloat("Car speed", &car_.speed, -10.0f, 10.0f, "%.2f m/s");
-        ImGui::SliderFloat("Steering Angle", &car_.steeringAngle, -30.0f, 30.0f, "%.2f°");
-        if (ImGui::Button("Reset steering"))
-            car_.steeringAngle = 0.f;
-        ImGui::Checkbox("Headlight", &car_.isHeadlightOn);
-        ImGui::Checkbox("Left Blinker", &car_.isLeftBlinkerActivated);
-        ImGui::Checkbox("Right Blinker", &car_.isRightBlinkerActivated);
-        ImGui::Checkbox("Brake", &car_.isBraking);
-        ImGui::End();
-    
-        updateCameraInput();
-        car_.update(deltaTime_);
-        
-        glm::mat4 view = getViewMatrix();
-        glm::mat4 proj = getPerspectiveProjectionMatrix();
-        glm::mat4 projView = proj * view;
-
-    }
     
 private:
     
