@@ -17,9 +17,9 @@ using namespace glm;
 
 struct Material
 {
-    glm::vec4 emission; // vec3, but padded
-    glm::vec4 ambient;  // vec3, but padded
-    glm::vec4 diffuse;  // vec3, but padded
+    glm::vec4 emission;
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
     glm::vec3 specular;
     GLfloat shininess;
 };
@@ -106,22 +106,22 @@ void Car::update(float deltaTime)
     carModel = glm::rotate(carModel, orientation.x, glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
-void Car::draw(const glm::mat4& projView, const glm::mat4& view, bool use_outline)
+void Car::draw(const glm::mat4& projView, const glm::mat4& view, bool useOutline)
 {
     glm::mat4 carModel = glm::mat4(1.0f);
     carModel = glm::translate(carModel, position + glm::vec3(0.0f, 0.0f, -20.0f));
     carModel = glm::rotate(carModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f)); 
     carModel = glm::rotate(carModel, orientation.x, glm::vec3(1.0f, 0.0f, 0.0f)); 
-    drawFrame(projView, view, carModel, use_outline);
-    drawWheels(projView, view, carModel, use_outline);
-    drawHeadlights(projView, view, carModel, use_outline);
+    drawFrame(projView, view, carModel, useOutline);
+    drawWheels(projView, view, carModel, useOutline);
+    drawHeadlights(projView, view, carModel, useOutline);
 }
     
-void Car::drawFrame(const glm::mat4& projView, const glm::mat4& view, const glm::mat4& carModel, bool use_outline)
+void Car::drawFrame(const glm::mat4& projView, const glm::mat4& view, const glm::mat4& carModel, bool useOutline)
 {
     glm::mat4 model = glm::translate(carModel, glm::vec3(0.0f, 0.25f, 0.0f));
     glm::mat4 frameMVP = projView * model;
-    if (use_outline) {
+    if (useOutline) {
         glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(frameMVP));
     } else {
         celShadingShader->setMatrices(frameMVP, view, model);
@@ -129,7 +129,7 @@ void Car::drawFrame(const glm::mat4& projView, const glm::mat4& view, const glm:
     frame_.draw();
 }
 
-void Car::drawWheel(const glm::mat4& projView, const glm::mat4& view, glm::mat4 carModel, const bool isLeft, const bool isFront, bool use_outline)
+void Car::drawWheel(const glm::mat4& projView, const glm::mat4& view, glm::mat4 carModel, const bool isLeft, const bool isFront, bool useOutline)
 {
     const float OFFSET = -0.10124f;
 
@@ -143,7 +143,7 @@ void Car::drawWheel(const glm::mat4& projView, const glm::mat4& view, glm::mat4 
     carModel = glm::translate(carModel, glm::vec3(0.0f, 0.0f, OFFSET));
 
     glm::mat4 mvp = projView * carModel;
-    if (use_outline) {
+    if (useOutline) {
         glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
     } else {
         celShadingShader->setMatrices(mvp, view, carModel);
@@ -151,7 +151,7 @@ void Car::drawWheel(const glm::mat4& projView, const glm::mat4& view, glm::mat4 
     wheel_.draw();
 }
 
-void Car::drawWheels(const glm::mat4& projView, const glm::mat4& view, const glm::mat4& carModel, bool use_outline)
+void Car::drawWheels(const glm::mat4& projView, const glm::mat4& view, const glm::mat4& carModel, bool useOutline)
 {
     const glm::vec3 WHEEL_POSITIONS[] =
     {
@@ -172,16 +172,16 @@ void Car::drawWheels(const glm::mat4& projView, const glm::mat4& view, const glm
             model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         }
 
-        drawWheel(projView, view, model, isLeft, isFront, use_outline);
+        drawWheel(projView, view, model, isLeft, isFront, useOutline);
     }
 }
 
-void Car::drawBlinker(const glm::mat4& projView, const glm::mat4& view, const glm::mat4& headlightModel, bool isLeftHeadlight, bool use_outline)
+void Car::drawBlinker(const glm::mat4& projView, const glm::mat4& view, const glm::mat4& headlightModel, bool isLeftHeadlight, bool useOutline)
 {
     glm::mat4 model = glm::translate(headlightModel, glm::vec3(0.0f, 0.0f, -0.06065f));
     glm::mat4 mvp = projView * model;
 
-    if (use_outline) {
+    if (useOutline) {
         glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
         blinker_.draw();
         return;
@@ -211,12 +211,12 @@ void Car::drawBlinker(const glm::mat4& projView, const glm::mat4& view, const gl
     blinker_.draw();
 }
 
-void Car::drawLight(const glm::mat4& projView, const glm::mat4& view, const glm::mat4& headLightModel, bool isFrontHeadlight, bool use_outline)
+void Car::drawLight(const glm::mat4& projView, const glm::mat4& view, const glm::mat4& headLightModel, bool isFrontHeadlight, bool useOutline)
 {
     glm::mat4 model = glm::translate(headLightModel, glm::vec3(0.0f, 0.0f, 0.029));
     glm::mat4 mvp = projView * model;
 
-    if (use_outline) {
+    if (useOutline) {
         glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
         light_.draw();
         return;
@@ -263,7 +263,7 @@ void Car::drawLight(const glm::mat4& projView, const glm::mat4& view, const glm:
     light_.draw();
 }
 
-void Car::drawHeadlight(const glm::mat4& projView, const glm::mat4& view, glm::mat4 headLightModel, bool isFrontHeadlight, bool isLeftHeadlight, bool use_outline) 
+void Car::drawHeadlight(const glm::mat4& projView, const glm::mat4& view, glm::mat4 headLightModel, bool isFrontHeadlight, bool isLeftHeadlight, bool useOutline) 
 {
     if (isFrontHeadlight && isLeftHeadlight) {
         headLightModel = glm::rotate(headLightModel, glm::radians(5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -273,11 +273,11 @@ void Car::drawHeadlight(const glm::mat4& projView, const glm::mat4& view, glm::m
         headLightModel = glm::rotate(headLightModel, glm::radians(-5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     }
 
-    drawLight(projView, view, headLightModel, isFrontHeadlight, use_outline);
-    drawBlinker(projView, view, headLightModel, isLeftHeadlight, use_outline);
+    drawLight(projView, view, headLightModel, isFrontHeadlight, useOutline);
+    drawBlinker(projView, view, headLightModel, isLeftHeadlight, useOutline);
 }
 
-void Car::drawHeadlights(const glm::mat4& projView, const glm::mat4& view, const glm::mat4& carModel, bool use_outline)
+void Car::drawHeadlights(const glm::mat4& projView, const glm::mat4& view, const glm::mat4& carModel, bool useOutline)
 {
     const glm::vec3 HEADLIGHT_POSITIONS[] =
     {
@@ -300,7 +300,7 @@ void Car::drawHeadlights(const glm::mat4& projView, const glm::mat4& view, const
             model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)); 
         }
 
-        drawHeadlight(projView, view, model, isFrontHeadlight, isLeftHeadlight, use_outline);
+        drawHeadlight(projView, view, model, isFrontHeadlight, isLeftHeadlight, useOutline);
     }
 }
 
@@ -316,12 +316,10 @@ void Car::drawWindows(const glm::mat4& projView, const glm::mat4& view)
         glm::vec3(0.643, 0.756, -0.508)
     };
     
-    // TODO: À ajouter et compléter.
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_CULL_FACE); // Pour que les vitres soient visibles des deux côtés
+    glDisable(GL_CULL_FACE);
 
-    // On recrée la matrice de modèle de la voiture comme dans Car::draw pour être cohérent
     glm::mat4 carDrawModel = glm::mat4(1.0f);
     carDrawModel = glm::translate(carDrawModel, position + glm::vec3(0.0f, 0.0f, -20.0f));
     carDrawModel = glm::rotate(carDrawModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f)); 
@@ -330,32 +328,22 @@ void Car::drawWindows(const glm::mat4& projView, const glm::mat4& view)
     std::map<float, unsigned int> sorted;
     for (unsigned int i = 0; i < 6; i++)
     {
-        // Calculer la position de la fenêtre dans le monde
         glm::vec3 windowWorldPos = glm::vec3(carDrawModel * glm::vec4(WINDOW_POSITION[i], 1.0f));
-        // Transformer en espace de vue
         glm::vec4 windowViewPos = view * glm::vec4(windowWorldPos, 1.0f);
-        // Calculer la distance à la caméra (qui est à l'origine en espace de vue)
         float distance = glm::length(glm::vec3(windowViewPos));
         sorted[distance] = i;
     }
 
-    // Itérer sur la map triée en ordre inverse (du plus loin au plus proche)
     for (std::map<float, unsigned int>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
     {
         unsigned int i = it->second;
 
-        // On applique le même décalage que pour le châssis (frame)
         glm::mat4 model = glm::translate(carDrawModel, glm::vec3(0.0f, 0.25f, 0.0f));
-        
-        // Calculer la matrice MVP
         glm::mat4 mvp = projView * model;
-
-        // Envoyer les matrices au shader et dessiner
         celShadingShader->setMatrices(mvp, view, model);
         windows[i].draw();
     }
 
-    // Restaurer l'état d'OpenGL
     glEnable(GL_CULL_FACE);
     glDisable(GL_BLEND);
 }

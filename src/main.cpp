@@ -33,40 +33,36 @@
 using namespace gl;
 using namespace glm;
 
-// Définition des structures pour la communication avec le shader. NE PAS MODIFIER.
-
 struct Material
 {
-    glm::vec4 emission; // vec3, but padded
-    glm::vec4 ambient;  // vec3, but padded
-    glm::vec4 diffuse;  // vec3, but padded
+    glm::vec4 emission;
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
     glm::vec3 specular;
     GLfloat shininess;
 };
 
 struct DirectionalLight
 {
-    glm::vec4 ambient;   // vec3, but padded
-    glm::vec4 diffuse;   // vec3, but padded
-    glm::vec4 specular;  // vec3, but padded    
-    glm::vec4 direction; // vec3, but padded
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;    
+    glm::vec4 direction;
 };
 
 struct SpotLight
 {
-    glm::vec4 ambient;   // vec3, but padded
-    glm::vec4 diffuse;   // vec3, but padded
-    glm::vec4 specular;  // vec3, but padded
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
     
-    glm::vec4 position;  // vec3, but padded
+    glm::vec4 position;
     glm::vec3 direction;
     GLfloat exponent;
     GLfloat openingAngle;
     
     GLfloat padding[3];
 };
-
-// Matériels
 
 Material defaultMat = 
 {
@@ -158,7 +154,6 @@ struct App : public OpenGLApplication
 	
 	void init() override
 	{
-		// Le message expliquant les touches de clavier.
 		setKeybindMessage(
 			"ESC : quitter l'application." "\n"
 			"T : changer de scène." "\n"
@@ -173,33 +168,18 @@ struct App : public OpenGLApplication
 			"Espace : activer/désactiver la souris." "\n"
 		);
 
-		// Config de base.
         glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         
-        // Partie 1
-        
-        // TODO:
-        // Création des shaders program. Fait appel à la méthode "create()".
         edgeEffectShader_.create();
         celShadingShader_.create();
         skyShader_.create();
         
-        // TODO: À ajouter.
         car_.edgeEffectShader = &edgeEffectShader_;
         car_.celShadingShader = &celShadingShader_;
         car_.material = &material_;
         
-        
-        // TODO: Chargement des textures, ainsi que la configuration de leurs paramètres.
-        //
-        //       Les textures ne se répètent pas, sauf le sol, la route (mais pas les coins), les arbres et les lampadaires.
-        //
-        //       Les textures ont un fini lisse, à l’exception des arbres, des lumières de lampadaire et
-        //       des fenêtres de la voiture.
-        //       
-        //       Le mipmap __ne doit pas__ être activé pour toutes les textures, seulement le sol et la route.
         grassTexture_.load("../textures/grass.jpg");
         grassTexture_.setWrap(GL_REPEAT);
         grassTexture_.setFiltering(GL_LINEAR);
@@ -231,13 +211,9 @@ struct App : public OpenGLApplication
         streetlightTexture_.setWrap(GL_REPEAT);
         streetlightTexture_.setFiltering(GL_LINEAR);
 
-        // Simplement pour réduire l'effet "négatif" du mipmap qui rend la
-        // texture flou trop près.
 	    streetTexture_.use();
 	    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
 	    
-        
-        // TODO: Chargement des deux skyboxes.
         
         const char* pathes[] = {
             "../textures/skybox/Daylight Box_Right.bmp",
@@ -262,9 +238,6 @@ struct App : public OpenGLApplication
         
         initStaticModelMatrices();
         
-        // Partie 3
-        
-        // TODO: À ajouter. Aucune modification nécessaire.
         material_.allocate(&defaultMat, sizeof(Material));
         material_.setBindingIndex(0);
         
@@ -283,8 +256,6 @@ struct App : public OpenGLApplication
             lightsData_.spotLights[i].exponent = 6.0f;
             lightsData_.spotLights[i].openingAngle = 60.f;        
         }
-        
-        // Initialisation des paramètres de lumière des phares
         
         lightsData_.spotLights[N_STREETLIGHTS].position = glm::vec4(-1.6, 0.64, -0.45, 0.0f);
         lightsData_.spotLights[N_STREETLIGHTS].direction = glm::vec3(-10, -1, 0);
@@ -322,10 +293,8 @@ struct App : public OpenGLApplication
 	}
 
 
-	// Appelée à chaque trame. Le buffer swap est fait juste après.
 	void drawFrame() override
 	{
-        // On efface les tampons de couleur, de profondeur et de stencil
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         
         ImGui::Begin("Scene Parameters");
@@ -335,12 +304,10 @@ struct App : public OpenGLApplication
         sceneMain();
 	}
 
-	// Appelée lorsque la fenêtre se ferme.
 	void onClose() override
 	{
 	}
 
-	// Appelée lors d'une touche de clavier.
 	void onKeyPress(const sf::Event::KeyPressed& key) override
 	{
 		using enum sf::Keyboard::Key;
@@ -447,7 +414,6 @@ struct App : public OpenGLApplication
         streetcorner_.load(streetcorner, sizeof(streetcorner), planeElements, sizeof(planeElements));
     }
 
-    // Méthode pour le calcul des matrices initiales des arbres et des lampadaires.
     void initStaticModelMatrices()
     {
         const float OFFSET = 17.0f;
@@ -467,7 +433,6 @@ struct App : public OpenGLApplication
                 model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
                 streetlightModelMatrices_[streetlightIndex] = model;
-                // TODO: À ajouter. C'est pour avoir la position de la lumière du lampadaire pour la partie 3.
                 streetlightLightPositions[streetlightIndex] = glm::vec3(model * glm::vec4(-2.77, 5.2, 0.0, 1.0));
                 streetlightIndex++;
             }
@@ -489,7 +454,6 @@ struct App : public OpenGLApplication
                 streetlight_.draw();
                 streetlightLight_.draw();
             } else {
-                // Dessin de la lumière du lampadaire
                 if (!isDay_)
                     setMaterial(streetlightLightMat);
                 else
@@ -497,7 +461,6 @@ struct App : public OpenGLApplication
                 celShadingShader_.setMatrices(mvp, view, model);
                 streetlightLight_.draw();
             
-                // Dessin du poteau du lampadaire
                 setMaterial(streetlightMat);
                 streetlightTexture_.use();
                 celShadingShader_.setMatrices(mvp, view, model);
@@ -523,11 +486,10 @@ struct App : public OpenGLApplication
         glEnable(GL_CULL_FACE);
     }
     
-    // TODO: À modifier, ajouter les textures
     void drawGround(const glm::mat4& projView, const glm::mat4& view)
     {
         setMaterial(grassMat);
-        // offset ground by -0.1 to avoid overlap (depth buffer doesnt know which surface is in front)
+
         glm::mat4 grassModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
         grassModel = glm::scale(grassModel, glm::vec3(50.0f, 1.0f, 50.0f));
 
@@ -562,12 +524,9 @@ struct App : public OpenGLApplication
             }
         }
 
-        // Street corners use the same material as the street.
         streetcornerTexture_.use();
         for (int side = 0; side < 4; ++side) {
             float angle = glm::radians(90.0f * side);
-
-            streetcornerTexture_.use();
 
             glm::mat4 cornerModel = glm::mat4(1.0f);
             cornerModel = glm::rotate(cornerModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -600,7 +559,6 @@ struct App : public OpenGLApplication
         glUniform3f(celShadingShader_.globalAmbientULoc, ambientIntensity, ambientIntensity, ambientIntensity);
     }
 
-    // TODO: À ajouter. Pas de modification.
     void toggleSun()
     {
         if (isDay_)
@@ -617,7 +575,6 @@ struct App : public OpenGLApplication
         }
     }
     
-    // TODO: À ajouter. Pas de modification.
     void toggleStreetlight()
     {
         if (isDay_)
@@ -652,7 +609,6 @@ struct App : public OpenGLApplication
         lightsData_.spotLights[N_STREETLIGHTS+1].diffuse = glm::vec4(glm::vec3(1.0), 0.0f);
         lightsData_.spotLights[N_STREETLIGHTS+1].specular = glm::vec4(glm::vec3(0.4), 0.0f);
         
-        // Multiplier la position par la matrice carModel, et la direction par la matrice 3x3 de carModel
         lightsData_.spotLights[N_STREETLIGHTS].position = car_.carModel * glm::vec4(-1.6f, 0.64f, -0.45f, 1.0f);
         lightsData_.spotLights[N_STREETLIGHTS].direction = glm::mat3(car_.carModel) * glm::vec3(-10.0f, -1.0f, 0.0f);
         
@@ -680,7 +636,6 @@ struct App : public OpenGLApplication
         lightsData_.spotLights[N_STREETLIGHTS+3].diffuse = glm::vec4(0.9, 0.1, 0.1, 0.0f);
         lightsData_.spotLights[N_STREETLIGHTS+3].specular = glm::vec4(0.35, 0.05, 0.05, 0.0f);
         
-        // Même logique pour les feux de freinage
         lightsData_.spotLights[N_STREETLIGHTS+2].position = car_.carModel * glm::vec4(1.6f, 0.64f, -0.45f, 1.0f);        
         lightsData_.spotLights[N_STREETLIGHTS+2].direction = glm::mat3(car_.carModel) * glm::vec3(10.0f, -1.0f, 0.0f);
         
@@ -699,10 +654,8 @@ struct App : public OpenGLApplication
     }
 }
 
-    // TODO: À ajouter. Pas de modification.
     void setMaterial(Material& mat)
     {
-        // Ça vous donne une idée de comment utiliser les ubo dans car.cpp.
         material_.updateData(&mat, 0, sizeof(Material));
     }
     
@@ -716,9 +669,6 @@ struct App : public OpenGLApplication
         return glm::perspective(fov, aspect, near, far);
     }
 
-    // TODO: À ajouter et modifier.
-    //       Ajouter les textures, les skyboxes, les fenêtres de la voiture,
-    //       les effets de contour, etc.
     void sceneMain()
     {    
         ImGui::Begin("Scene Parameters");
@@ -749,9 +699,7 @@ struct App : public OpenGLApplication
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
 
-        // --- Dessin du skybox ---
-        // On le dessine en premier pour qu'il serve de fond à toute la scène.
-        // Ainsi, le contour des objets se dessinera par-dessus le ciel et non l'inverse.
+        // Sky box
         glDepthFunc(GL_LEQUAL);
         skyShader_.use();
         glm::mat4 skyView = glm::mat4(glm::mat3(view));
@@ -759,78 +707,61 @@ struct App : public OpenGLApplication
         glUniformMatrix4fv(skyShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(skyMVP));
         (isDay_ ? skyboxTexture_ : skyboxNightTexture_).use();
         skybox_.draw();
-        glDepthFunc(GL_LESS); // On remet la fonction de profondeur par défaut pour le reste.
+        glDepthFunc(GL_LESS);
 
-        // --- Dessin des objets sans contour ---
+        // Sol sans contour
         celShadingShader_.use();
-        setMaterial(grassMat);
         drawGround(projView, view);
 
-        // --- Dessin des objets avec contour ---
-
-        // 1. Première passe : dessiner les objets normalement et remplir le stencil buffer
+        // Objets avec contour
         glEnable(GL_STENCIL_TEST);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         glStencilMask(0xFF);
         glDepthMask(GL_TRUE);
 
-        celShadingShader_.use();
-
-        // Voiture - ID 1
-        glStencilFunc(GL_ALWAYS, 1, 0xFF); // <-- Valeur 1
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
         setMaterial(defaultMat);
         carTexture_.use();
         car_.draw(projView, view, false);
 
-        // On empêche d'écrire des pixels ou de la profondeur à l'écran
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
         glDepthMask(GL_FALSE);
 
         carWindowTexture_.use();
         car_.drawWindows(projView, view);
         
-        // On réactive l'affichage pour le reste de la scène !
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         glDepthMask(GL_TRUE);
 
-        // Arbre - ID 2
-        glStencilFunc(GL_ALWAYS, 2, 0xFF); // <-- Valeur 2
+        glStencilFunc(GL_ALWAYS, 2, 0xFF);
         setMaterial(grassMat);
         treeTexture_.use();
         drawTree(projView, view);
 
-        // Lampadaires - ID 3
-        glStencilFunc(GL_ALWAYS, 3, 0xFF); // <-- Valeur 3
+        glStencilFunc(GL_ALWAYS, 3, 0xFF);
         setMaterial(streetlightMat);
         drawStreetlights(projView, view);
 
-        // 2. Deuxième passe : dessiner les objets agrandis pour le contour
-        glStencilMask(0x00); // Désactiver l'écriture
-        // TRÈS IMPORTANT : On laisse le test de profondeur (GL_DEPTH_TEST) activé !
+        // effet de contour
+        glStencilMask(0x00);
 
         edgeEffectShader_.use();
 
-        // Contour Voiture (s'annule SEULEMENT si stencil == 1)
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
         car_.draw(projView, view, true);
 
-        // Contour Arbre (s'annule SEULEMENT si stencil == 2)
         glStencilFunc(GL_NOTEQUAL, 2, 0xFF);
         drawTree(projView, view, true);
 
-        // Contour Lampadaires (s'annule SEULEMENT si stencil == 3)
         glStencilFunc(GL_NOTEQUAL, 3, 0xFF);
         drawStreetlights(projView, view, true);
 
-        // 3. Restaurer les états
         glStencilMask(0xFF);
         glStencilFunc(GL_ALWAYS, 1, 0xFF);
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_STENCIL_TEST);
 
-        // --- Dessin des objets transparents (fenêtres) ---
-        // Les fenêtres sont dessinées en dernier, après les objets opaques et le skybox.
-        // Elles ne participent pas à l'effet de contour.
+        // Objets transparent
         celShadingShader_.use();
         setMaterial(windowMat);
         carWindowTexture_.use();

@@ -119,7 +119,6 @@ void Model::load(const char* path)
             vPos[i].color.g = colorGreen[i];
             vPos[i].color.b = colorBlue[i];
         } else {
-            // Default to white if no color is provided
             vPos[i].color.r = 255;
             vPos[i].color.g = 255;
             vPos[i].color.b = 255;
@@ -189,7 +188,6 @@ void Model::load(const char* path)
     count_ = elementsData.size();
 }
 
-// Nouvelle définition de Model::load() à utiliser pour le sol et la route.
 void Model::load(const float* vertexData, size_t vertexDataSize, const unsigned int* elementData, size_t elementDataSize)
 {
     size_t nVertices = vertexDataSize / (5 * sizeof(float));
@@ -202,12 +200,10 @@ void Model::load(const float* vertexData, size_t vertexDataSize, const unsigned 
         vPos[i].pos.y = vertexData[i*5 + 1];
         vPos[i].pos.z = vertexData[i*5 + 2];
 
-        // No color in model_data.hpp, default to white
         vPos[i].color.r = 255;
         vPos[i].color.g = 255;
         vPos[i].color.b = 255;
 
-        // No normal in model_data.hpp, will be handled in vertex shader
         vPos[i].normal.x = 0.0f;
         vPos[i].normal.y = 1.0f;
         vPos[i].normal.z = 0.0f;
