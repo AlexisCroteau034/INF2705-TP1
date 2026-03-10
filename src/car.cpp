@@ -296,29 +296,48 @@ void Car::drawWindows(glm::mat4& projView, glm::mat4& view)
     };
     
     // TODO: À ajouter et compléter.
-    //       Dessiner les vitres de la voiture. Celles-ci ont une texture transparente,
-    //       il est donc nécessaire d'activer le mélange des couleurs (GL_BLEND).
-    //       De plus, vous devez dessiner les fenêtres du plus loin vers le plus proche
-    //       pour éviter les problèmes de mélange.
-    //       Utiliser un map avec la distance en clef pour trier les fenêtres (les maps trient
-    //       à l'insertion).
-    //       Les fenêtres doivent être visibles des deux sens.
-    //       Il est important de restaurer l'état du contexte qui a été modifié à la fin de la méthode.
-    
-    
-    // Les fenêtres sont par rapport au chassi, à considérer dans votre matrice
-    // model = glm::translate(model, glm::vec3(0.0f, 0.25f, 0.0f));
-    
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_CULL_FACE); // Pour que les vitres soient visibles des deux côtés
+
+    // On recrée la matrice de modèle de la voiture comme dans Car::draw pour être cohérent
+    glm::mat4 carDrawModel = glm::mat4(1.0f);
+    carDrawModel = glm::translate(carDrawModel, position + glm::vec3(0.0f, 0.0f, -20.0f));
+    carDrawModel = glm::rotate(carDrawModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f)); 
+    carDrawModel = glm::rotate(carDrawModel, orientation.x, glm::vec3(1.0f, 0.0f, 0.0f));
+
+    // Les fenêtres sont relatives au châssis
+    glm::mat4 chassisModel = glm::translate(carDrawModel, glm::vec3(0.0f, 0.25f, 0.0f));
+
     std::map<float, unsigned int> sorted;
     for (unsigned int i = 0; i < 6; i++)
     {
-        // TODO: Calcul de la distance par rapport à l'observateur (utiliser la matrice de vue!)
-        //       et faite une insertion dans le map
+        // Calculer la position de la fenêtre dans le monde
+        glm::vec3 windowWorldPos = glm::vec3(chassisModel * glm::vec4(WINDOW_POSITION[i], 1.0f));
+        // Transformer en espace de vue
+        glm::vec4 windowViewPos = view * glm::vec4(windowWorldPos, 1.0f);
+        // Calculer la distance à la caméra (qui est à l'origine en espace de vue)
+        float distance = glm::length(glm::vec3(windowViewPos));
+        sorted[distance] = i;
     }
     
-    // TODO: Itération à l'inverse (de la plus grande distance jusqu'à la plus petit)
+    // Itérer sur la map triée en ordre inverse (du plus loin au plus proche)
     for (std::map<float, unsigned int>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
     {
-        // TODO: Dessin des fenêtres
+        unsigned int i = it->second;
+
+        // Créer la matrice modèle pour cette fenêtre
+        glm::mat4 model = glm::translate(chassisModel, WINDOW_POSITION[i]);
+        
+        // Calculer la matrice MVP
+        glm::mat4 mvp = projView * model;
+
+        // Envoyer les matrices au shader et dessiner
+        celShadingShader->setMatrices(mvp, view, model);
+        windows[i].draw();
     }
+
+    // Restaurer l'état d'OpenGL
+    glEnable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
 }

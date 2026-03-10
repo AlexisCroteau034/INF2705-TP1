@@ -438,7 +438,7 @@ struct App : public OpenGLApplication
         tree_.load("../models/pine.ply");
         streetlight_.load("../models/streetlight.ply");
         streetlightLight_.load("../models/streetlight_light.ply");
-        // skybox_.load("../models/skybox.ply");
+        skybox_.load("../models/skybox.ply");
         grass_.load(ground, sizeof(ground), planeElements, sizeof(planeElements));
         street_.load(street, sizeof(street), planeElements, sizeof(planeElements));
         streetcorner_.load(streetcorner, sizeof(streetcorner), planeElements, sizeof(planeElements));
@@ -741,36 +741,46 @@ struct App : public OpenGLApplication
         glm::mat4 view = getViewMatrix();
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
+
         celShadingShader_.use();
         
-        // TODO: Dessin des éléments
-        // ...
-        // Penser à votre ordre de dessin, les todos sont volontairement mélangé ici.
-        
+        // Dessin des objets opaques
         setMaterial(defaultMat);
-        // TODO: Dessin de l'automobile
         carTexture_.use();
         car_.draw(projView, view);
         
-        // TODO: Dessin du skybox
-        
         setMaterial(grassMat);
-        // TODO: Dessin des arbres. Oui, ils utilisent le même matériel que le sol.
         treeTexture_.use();
         drawGround(projView, view);
         drawTree(projView, view);
         
         setMaterial(streetlightMat);
         streetlightTexture_.use();
-        // TODO: Dessin des lampadaires.
         drawStreetlights(projView, view);
 
-        setMaterial(windowMat);
-        // TODO: Dessin des fenêtres
-        
-    }
+        // Dessin du skybox.
+        // On le dessine après les objets opaques.
+        // On change la fonction de test de profondeur pour GL_LEQUAL.
+        // Le shader du skybox force la profondeur à 1.0 (la valeur maximale).
+        // Ainsi, le skybox ne sera dessiné que là où il n'y a pas d'autres objets (où la profondeur est encore à sa valeur par défaut de 1.0).
+        glDepthFunc(GL_LEQUAL);
+        skyShader_.use();
+        glm::mat4 skyView = glm::mat4(glm::mat3(view)); // Enlève la translation de la matrice de vue
+        glm::mat4 skyMVP = proj * skyView;
+        glUniformMatrix4fv(skyShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(skyMVP));
+        if (isDay_)
+            skyboxTexture_.use();
+        else
+            skyboxNightTexture_.use();
+        skybox_.draw();
+        glDepthFunc(GL_LESS); // Rétablit la fonction de profondeur par défaut
 
-    
+        // Dessin des fenêtres (objets transparents) en dernier
+        setMaterial(windowMat);
+        carWindowTexture_.use();
+        car_.drawWindows(projView, view);
+    }
+ 
 private:
     
     Car car_;

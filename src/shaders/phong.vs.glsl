@@ -87,11 +87,19 @@ void main()
     }
 
     // Lights
+    vec4 posInView = modelView * vec4(position, 1.0);
+    lightsOut.obsPos = posInView.xyz;
 
-    // TODO: Écriture des propriétés de lumières en sortie    
+    // Directional light
+    lightsOut.dirLightDir = normalize(mat3(view) * dirLight.direction);
+
+    // Spot lights
+    // TODO: Écriture des propriétés de lumières en sortie
     for(int i = 0; i < nSpotLights; i++)
     {
-        // ...
+        vec4 spotPosInView = view * vec4(spotLights[i].position, 1.0);
+        lightsOut.spotLightsDir[i] = spotPosInView.xyz - posInView.xyz;
+        lightsOut.spotLightsSpotDir[i] = normalize(mat3(view) * spotLights[i].direction);
     }
     gl_Position = mvp * vec4(position, 1.0);
 }
