@@ -68,7 +68,7 @@ void CelShading::assignAllUniformBlockIndexes()
 }
 
 
-void CelShading::setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model)
+void CelShading::setMatrices(const glm::mat4& mvp, const glm::mat4& view, const glm::mat4& model)
 {
     glm::mat4 modelView = view * model;
     

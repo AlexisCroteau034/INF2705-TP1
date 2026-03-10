@@ -47,7 +47,7 @@ public:
     GLuint globalAmbientULoc;
 
 public:
-    void setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model);
+    void setMatrices(const glm::mat4& mvp, const glm::mat4& view, const glm::mat4& model);
 
 protected:
     virtual void load() override;

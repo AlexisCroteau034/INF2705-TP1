@@ -458,7 +458,7 @@ struct App : public OpenGLApplication
         }
     }
     
-    void drawStreetlights(glm::mat4& projView, glm::mat4& view, bool forOutline = false)
+    void drawStreetlights(const glm::mat4& projView, const glm::mat4& view, bool forOutline = false)
     {
         const float OFFSET = 17.0f;
         const float HEIGHT = -0.15f;
@@ -503,7 +503,7 @@ struct App : public OpenGLApplication
         }
     }
     
-    void drawTree(glm::mat4& projView, glm::mat4& view, bool forOutline = false)
+    void drawTree(const glm::mat4& projView, const glm::mat4& view, bool forOutline = false)
     {
         glDisable(GL_CULL_FACE);
 
@@ -521,7 +521,7 @@ struct App : public OpenGLApplication
     }
     
     // TODO: À modifier, ajouter les textures
-    void drawGround(glm::mat4& projView, glm::mat4& view)
+    void drawGround(const glm::mat4& projView, const glm::mat4& view)
     {
         setMaterial(grassMat);
         // offset ground by -0.1 to avoid overlap (depth buffer doesnt know which surface is in front)
@@ -786,6 +786,17 @@ struct App : public OpenGLApplication
         carTexture_.use();
         car_.draw(projView, view, false);
 
+        // On empêche d'écrire des pixels ou de la profondeur à l'écran
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glDepthMask(GL_FALSE);
+
+        carWindowTexture_.use();
+        car_.drawWindows(projView, view);
+        
+        // On réactive l'affichage pour le reste de la scène !
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        glDepthMask(GL_TRUE);
+
         // Arbre - ID 2
         glStencilFunc(GL_ALWAYS, 2, 0xFF); // <-- Valeur 2
         setMaterial(grassMat);
@@ -824,6 +835,7 @@ struct App : public OpenGLApplication
         // --- Dessin des objets transparents (fenêtres) ---
         // Les fenêtres sont dessinées en dernier, après les objets opaques et le skybox.
         // Elles ne participent pas à l'effet de contour.
+        celShadingShader_.use();
         setMaterial(windowMat);
         carWindowTexture_.use();
         car_.drawWindows(projView, view);
