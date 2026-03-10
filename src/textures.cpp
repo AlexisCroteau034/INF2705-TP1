@@ -51,23 +51,26 @@ Texture2D::~Texture2D()
 void Texture2D::setFiltering(GLenum filteringMode)
 {
     // TODO: Configurer le filtre min et le mag avec le mode en paramètre.
-    glTextureParameteri(m_id, GL_TEXTURE_MIN_FILTER, filteringMode);
-    glTextureParameteri(m_id, GL_TEXTURE_MAG_FILTER, filteringMode);
+    glBindTexture(GL_TEXTURE_2D, m_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filteringMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filteringMode);
 }
 
 void Texture2D::setWrap(GLenum wrapMode)
 {
     // TODO: Configurer le wrap S et T avec le mode en paramètre.
-    glTextureParameteri(m_id, GL_TEXTURE_WRAP_S, wrapMode);
-    glTextureParameteri(m_id, GL_TEXTURE_WRAP_T, wrapMode);
+    glBindTexture(GL_TEXTURE_2D, m_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
 }
 
 void Texture2D::enableMipmap()
 {
     // TODO: Génère le mipmap et configure les paramètres pour l'utiliser.
-    glGenerateTextureMipmap(m_id);
-    glTextureParameteri(m_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTextureParameteri(m_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, m_id);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
 void Texture2D::use()
@@ -136,4 +139,3 @@ void TextureCubeMap::use()
 {
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
 }
-

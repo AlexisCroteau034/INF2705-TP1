@@ -74,9 +74,17 @@ layout (std140) uniform LightingBlock
 void main()
 {
     // Attribs
+    attribsOut.texCoords = texCoords;
+    attribsOut.color = color;
     
     // TODO: Écriture des attributs de sortie
     //       Si la normale est nul, lui donner une valeur qui pointe vers le haut.
+
+    if (length(normal) == 0.0) {
+        attribsOut.normal = vec3(0.0, 1.0, 0.0);
+    } else {
+        attribsOut.normal = normalize(normalMatrix * normal);
+    }
 
     // Lights
 
@@ -85,5 +93,5 @@ void main()
     {
         // ...
     }
-    
+    gl_Position = mvp * vec4(position, 1.0);
 }

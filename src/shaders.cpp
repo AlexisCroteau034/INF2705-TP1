@@ -40,12 +40,9 @@ void Sky::getAllUniformLocations()
 
 void CelShading::load()
 {
-    // const char* VERTEX_SRC_PATH = "./shaders/phong.vs.glsl";
-    // const char* FRAGMENT_SRC_PATH = "./shaders/phong.fs.glsl";
+    const char* VERTEX_SRC_PATH = "./shaders/phong.vs.glsl";
+    const char* FRAGMENT_SRC_PATH = "./shaders/phong.fs.glsl";
     
-    const char* VERTEX_SRC_PATH = "./shaders/transform.vs.glsl";
-    const char* FRAGMENT_SRC_PATH = "./shaders/transform.fs.glsl";
-
     name_ = "CelShading";
     loadShaderSource(GL_VERTEX_SHADER, VERTEX_SRC_PATH);
     loadShaderSource(GL_FRAGMENT_SHADER, FRAGMENT_SRC_PATH);

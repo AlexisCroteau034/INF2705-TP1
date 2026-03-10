@@ -99,7 +99,11 @@ void main()
         // Le facteur impacte la composante diffuse et spéculaire.
     }
 
-    vec3 color = vec3(0);
+    vec4 texColor = texture(diffuseSampler, attribsIn.texCoords);
+    // Pour la Partie 1, on veut afficher seulement la texture.
+    // La multiplication par attribsIn.color fait en sorte que les modèles avec des couleurs de sommets noires (comme les roues) apparaissent noirs.
+    vec3 color = mat.emission + texColor.rgb * mat.diffuse;
+    
     //color += normal/2.0 + vec3(0.5); // DEBUG: Show normals
-    FragColor = vec4(color, 1.0);
+    FragColor = vec4(color, texColor.a);
 }

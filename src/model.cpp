@@ -25,9 +25,6 @@ struct Vertex
     Color color;
 };
 
-// TODO: Nouvelle définition de Model::load() à utiliser pour le sol et la route.
-//       À ajouter à votre classe actuelle.
-
 struct PositionAttribute
 {
     float x, y, z;
@@ -117,11 +114,15 @@ void Model::load(const char* path)
         vPos[i].pos.y = positionY[i];
         vPos[i].pos.z = positionZ[i];
 
-        if (!colorRed.empty())
-        {
+        if (!colorRed.empty()) {
             vPos[i].color.r = colorRed[i];
             vPos[i].color.g = colorGreen[i];
             vPos[i].color.b = colorBlue[i];
+        } else {
+            // Default to white if no color is provided
+            vPos[i].color.r = 255;
+            vPos[i].color.g = 255;
+            vPos[i].color.b = 255;
         }
 
         if (!normalX.empty())
@@ -164,14 +165,9 @@ void Model::load(const char* path)
     glEnableVertexAttribArray(VERTEX_POSITION_INDEX);
     glVertexAttribPointer(VERTEX_POSITION_INDEX, 3, GL_FLOAT, GL_FALSE, sizeof(VertexModel), (GLvoid*)(offsetof(VertexModel, pos)));        
     
-    if (!colorRed.empty())
-    {
-        glEnableVertexAttribArray(VERTEX_COLOR_INDEX);
-        glVertexAttribPointer(VERTEX_COLOR_INDEX, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VertexModel), (GLvoid*)(offsetof(VertexModel, color)));
-    }
-    else
-        glDisableVertexAttribArray(VERTEX_COLOR_INDEX);
-
+    glEnableVertexAttribArray(VERTEX_COLOR_INDEX);
+    glVertexAttribPointer(VERTEX_COLOR_INDEX, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VertexModel), (GLvoid*)(offsetof(VertexModel, color)));
+    
     if (!normalX.empty())
     {
         glEnableVertexAttribArray(VERTEX_NORMAL_INDEX);
@@ -193,15 +189,40 @@ void Model::load(const char* path)
     count_ = elementsData.size();
 }
 
-void Model::load(float* vertices, size_t verticesSize, unsigned int* elements, size_t elementsSize)
+// Nouvelle définition de Model::load() à utiliser pour le sol et la route.
+void Model::load(const float* vertexData, size_t vertexDataSize, const unsigned int* elementData, size_t elementDataSize)
 {
+    size_t nVertices = vertexDataSize / (5 * sizeof(float));
+    std::vector<VertexModel> vPos(nVertices);
+    for (size_t i = 0; i < nVertices; i++)
+    {
+        vPos[i] = {0};
+    
+        vPos[i].pos.x = vertexData[i*5 + 0];
+        vPos[i].pos.y = vertexData[i*5 + 1];
+        vPos[i].pos.z = vertexData[i*5 + 2];
+
+        // No color in model_data.hpp, default to white
+        vPos[i].color.r = 255;
+        vPos[i].color.g = 255;
+        vPos[i].color.b = 255;
+
+        // No normal in model_data.hpp, will be handled in vertex shader
+        vPos[i].normal.x = 0.0f;
+        vPos[i].normal.y = 1.0f;
+        vPos[i].normal.z = 0.0f;
+        
+        vPos[i].texCoord.s = vertexData[i*5 + 3];
+        vPos[i].texCoord.t = vertexData[i*5 + 4];
+    }
+    
     glGenBuffers(1, &vbo_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    glBufferData(GL_ARRAY_BUFFER, verticesSize, vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vPos.size() * sizeof(VertexModel), &vPos[0], GL_STATIC_DRAW);
     
     glGenBuffers(1, &ebo_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, elementsSize, elements, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, elementDataSize, elementData, GL_STATIC_DRAW);
     
     glGenVertexArrays(1, &vao_);
     glBindVertexArray(vao_);
@@ -210,18 +231,22 @@ void Model::load(float* vertices, size_t verticesSize, unsigned int* elements, s
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);    
     
     glEnableVertexAttribArray(VERTEX_POSITION_INDEX);
-    glVertexAttribPointer(VERTEX_POSITION_INDEX, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(0));        
+    glVertexAttribPointer(VERTEX_POSITION_INDEX, 3, GL_FLOAT, GL_FALSE, sizeof(VertexModel), (GLvoid*)(offsetof(VertexModel, pos)));        
     
-    glDisableVertexAttribArray(VERTEX_COLOR_INDEX);
-    glDisableVertexAttribArray(VERTEX_NORMAL_INDEX);
+    glEnableVertexAttribArray(VERTEX_COLOR_INDEX);
+    glVertexAttribPointer(VERTEX_COLOR_INDEX, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VertexModel), (GLvoid*)(offsetof(VertexModel, color)));
 
+    glEnableVertexAttribArray(VERTEX_NORMAL_INDEX);
+    glVertexAttribPointer(VERTEX_NORMAL_INDEX, 3, GL_FLOAT, GL_FALSE, sizeof(VertexModel), (GLvoid*)(offsetof(VertexModel, normal)));
+        
     glEnableVertexAttribArray(VERTEX_TEXCOORDS_INDEX);
-    glVertexAttribPointer(VERTEX_TEXCOORDS_INDEX, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(3 * sizeof(float)));
+    glVertexAttribPointer(VERTEX_TEXCOORDS_INDEX, 2, GL_FLOAT, GL_FALSE, sizeof(VertexModel), (GLvoid*)(offsetof(VertexModel, texCoord)));
     
     glBindVertexArray(0);
     
-    count_ = elementsSize / sizeof(unsigned int);
+    count_ = elementDataSize / sizeof(unsigned int);
 }
+
 Model::~Model()
 {
     glDeleteVertexArrays(1, &vao_);
@@ -235,4 +260,3 @@ void Model::draw()
     glDrawElements(GL_TRIANGLES, count_, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
-

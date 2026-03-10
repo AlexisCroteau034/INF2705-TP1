@@ -213,6 +213,7 @@ struct App : public OpenGLApplication
         streetcornerTexture_.setWrap(GL_CLAMP_TO_EDGE);
         streetcornerTexture_.setFiltering(GL_LINEAR);
 
+
         carTexture_.load("../textures/car.png");
         carTexture_.setWrap(GL_CLAMP_TO_EDGE);
         carTexture_.setFiltering(GL_LINEAR);
@@ -258,7 +259,6 @@ struct App : public OpenGLApplication
         skyboxNightTexture_.load(nightPathes);
 
         
-        loadModels();        
         initStaticModelMatrices();
         
         // Partie 3
@@ -439,11 +439,9 @@ struct App : public OpenGLApplication
         streetlight_.load("../models/streetlight.ply");
         streetlightLight_.load("../models/streetlight_light.ply");
         // skybox_.load("../models/skybox.ply");
-        // TODO: Ajouter le chargement du sol et de la route avec la nouvelle méthode load
-        //       des modèles. Voir "model_data.hpp".
-        // grass_.load("../models/grass.ply");
-        // street_.load("../models/street.ply");
-        // streetcorner_.load("../models/streetcorner.ply");
+        grass_.load(ground, sizeof(ground), planeElements, sizeof(planeElements));
+        street_.load(street, sizeof(street), planeElements, sizeof(planeElements));
+        streetcorner_.load(streetcorner, sizeof(streetcorner), planeElements, sizeof(planeElements));
     }
 
     // Méthode pour le calcul des matrices initiales des arbres et des lampadaires.
@@ -490,6 +488,7 @@ struct App : public OpenGLApplication
 
                 glm::mat4 mvp = projView * model;
                 celShadingShader_.setMatrices(mvp, view, model);
+                streetlightTexture_.use();
                 streetlight_.draw();
             }
         }
@@ -505,6 +504,7 @@ struct App : public OpenGLApplication
 
         glm::mat4 treeMVP = projView * treeModel;
         celShadingShader_.setMatrices(treeMVP, view, treeModel);
+        treeTexture_.use();
         tree_.draw();
         glEnable(GL_CULL_FACE);
     }
@@ -512,31 +512,29 @@ struct App : public OpenGLApplication
     // TODO: À modifier, ajouter les textures
     void drawGround(glm::mat4& projView, glm::mat4& view)
     {
-        // ...
-        setMaterial(streetMat);
-        // TODO: Dessin de la route.
-        
-        // ...
         setMaterial(grassMat);
-        // TODO: Dessin du sol.  
-
         // offset ground by -0.1 to avoid overlap (depth buffer doesnt know which surface is in front)
         glm::mat4 grassModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
         grassModel = glm::scale(grassModel, glm::vec3(50.0f, 1.0f, 50.0f));
 
         glm::mat4 grassMVP = projView * grassModel;
         celShadingShader_.setMatrices(grassMVP, view, grassModel);
+        grassTexture_.use();
         grass_.draw();
 
         const float ROAD_OFFSET = 20.0f;
         const float ROAD_SPACING = 5.0f;
         const int N_ROAD_SEGMENT = 7;
 
+        setMaterial(streetMat);
+        streetTexture_.use();
         for (int side = 0; side < 4; ++side) {
             float angle = glm::radians(90.0f * side);
 
             for (int i = 0; i < N_ROAD_SEGMENT; ++i) {
                 float segmentPos = (i - (N_ROAD_SEGMENT / 2)) * ROAD_SPACING;
+
+                streetTexture_.use();
 
                 glm::mat4 roadModel = glm::mat4(1.0f);
                 roadModel = glm::rotate(roadModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -545,12 +543,17 @@ struct App : public OpenGLApplication
 
                 glm::mat4 roadMVP = projView * roadModel;
                 celShadingShader_.setMatrices(roadMVP, view, roadModel);
+                
                 street_.draw();
             }
         }
 
+        // Street corners use the same material as the street.
+        streetcornerTexture_.use();
         for (int side = 0; side < 4; ++side) {
             float angle = glm::radians(90.0f * side);
+
+            streetcornerTexture_.use();
 
             glm::mat4 cornerModel = glm::mat4(1.0f);
             cornerModel = glm::rotate(cornerModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -746,16 +749,19 @@ struct App : public OpenGLApplication
         
         setMaterial(defaultMat);
         // TODO: Dessin de l'automobile
+        carTexture_.use();
         car_.draw(projView, view);
         
         // TODO: Dessin du skybox
         
         setMaterial(grassMat);
         // TODO: Dessin des arbres. Oui, ils utilisent le même matériel que le sol.
+        treeTexture_.use();
         drawGround(projView, view);
         drawTree(projView, view);
         
         setMaterial(streetlightMat);
+        streetlightTexture_.use();
         // TODO: Dessin des lampadaires.
         drawStreetlights(projView, view);
 

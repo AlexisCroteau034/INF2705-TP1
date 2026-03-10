@@ -12,7 +12,8 @@ public:
     ~Model();
     
     void draw();
-    void load(float* vertices, size_t verticesSize, unsigned int* elements, size_t elementsSize);
+    void load(const float* vertexData, size_t vertexDataSize, const unsigned int* elementData, size_t elementDataSize);
+
 
 private:
     GLuint vao_, vbo_, ebo_;
