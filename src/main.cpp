@@ -323,7 +323,8 @@ struct App : public OpenGLApplication
 	// Appelée à chaque trame. Le buffer swap est fait juste après.
 	void drawFrame() override
 	{
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // On efface les tampons de couleur, de profondeur et de stencil
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         
         ImGui::Begin("Scene Parameters");
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
@@ -457,14 +458,15 @@ struct App : public OpenGLApplication
         }
     }
     
-    // TODO: À modifier, ajouter les textures, et l'effet de contour.
-    //       De plus, le modèle a été séparé en deux (pour la partie 3), adapter
-    //       votre code pour faire le dessin des deux parties.
-    void drawStreetlights(glm::mat4& projView, glm::mat4& view)
+    void drawStreetlights(glm::mat4& projView, glm::mat4& view, bool forOutline = false)
     {
         const float OFFSET = 17.0f;
         const float HEIGHT = -0.15f;
         const float SPACING = 10.0f;
+
+        if (!forOutline) {
+            celShadingShader_.use();
+        }
 
         for (int side = 0; side < 4; ++side) {
             float angle = glm::radians(90.0f * side);
@@ -472,39 +474,48 @@ struct App : public OpenGLApplication
             for (int i = 0; i < 2; ++i) {
                 float zPos = (i == 0) ? -SPACING : SPACING;
 
-                if (!isDay_)
-                    setMaterial(streetlightLightMat);
-                else
-                    setMaterial(streetlightMat);
-                // TODO: Dessin du mesh de la lumière.
-            
-                setMaterial(streetlightMat);
-                // TODO: Dessin du mesh du lampadaire.
-
                 glm::mat4 model = glm::mat4(1.0f);
                 model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
                 model = glm::translate(model, glm::vec3(zPos, HEIGHT, OFFSET));
                 model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
                 glm::mat4 mvp = projView * model;
-                celShadingShader_.setMatrices(mvp, view, model);
-                streetlightTexture_.use();
-                streetlight_.draw();
+
+                if (forOutline) {
+                    glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+                    streetlight_.draw();
+                    streetlightLight_.draw();
+                } else {
+                    // Dessin de la lumière du lampadaire
+                    if (!isDay_)
+                        setMaterial(streetlightLightMat);
+                    else
+                        setMaterial(streetlightMat);
+                    celShadingShader_.setMatrices(mvp, view, model);
+                    streetlightLight_.draw();
+                
+                    // Dessin du poteau du lampadaire
+                    setMaterial(streetlightMat);
+                    streetlightTexture_.use();
+                    celShadingShader_.setMatrices(mvp, view, model);
+                    streetlight_.draw();
+                }
             }
         }
     }
     
-    // TODO: À modifier, ajouter les textures, et l'effet de contour.
-    void drawTree(glm::mat4& projView, glm::mat4& view)
+    void drawTree(glm::mat4& projView, glm::mat4& view, bool forOutline = false)
     {
         glDisable(GL_CULL_FACE);
 
         glm::mat4 treeModel =  glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.1f, 1.0f));
         treeModel = glm::scale(treeModel, glm::vec3(15.0f, 15.0f, 15.0f));
-
         glm::mat4 treeMVP = projView * treeModel;
-        celShadingShader_.setMatrices(treeMVP, view, treeModel);
-        treeTexture_.use();
+
+        if (forOutline)
+            glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(treeMVP));
+        else
+            celShadingShader_.setMatrices(treeMVP, view, treeModel);
+
         tree_.draw();
         glEnable(GL_CULL_FACE);
     }
@@ -742,40 +753,77 @@ struct App : public OpenGLApplication
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
 
-        celShadingShader_.use();
-        
-        // Dessin des objets opaques
-        setMaterial(defaultMat);
-        carTexture_.use();
-        car_.draw(projView, view);
-        
-        setMaterial(grassMat);
-        treeTexture_.use();
-        drawGround(projView, view);
-        drawTree(projView, view);
-        
-        setMaterial(streetlightMat);
-        streetlightTexture_.use();
-        drawStreetlights(projView, view);
-
-        // Dessin du skybox.
-        // On le dessine après les objets opaques.
-        // On change la fonction de test de profondeur pour GL_LEQUAL.
-        // Le shader du skybox force la profondeur à 1.0 (la valeur maximale).
-        // Ainsi, le skybox ne sera dessiné que là où il n'y a pas d'autres objets (où la profondeur est encore à sa valeur par défaut de 1.0).
+        // --- Dessin du skybox ---
+        // On le dessine en premier pour qu'il serve de fond à toute la scène.
+        // Ainsi, le contour des objets se dessinera par-dessus le ciel et non l'inverse.
         glDepthFunc(GL_LEQUAL);
         skyShader_.use();
-        glm::mat4 skyView = glm::mat4(glm::mat3(view)); // Enlève la translation de la matrice de vue
+        glm::mat4 skyView = glm::mat4(glm::mat3(view));
         glm::mat4 skyMVP = proj * skyView;
         glUniformMatrix4fv(skyShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(skyMVP));
-        if (isDay_)
-            skyboxTexture_.use();
-        else
-            skyboxNightTexture_.use();
+        (isDay_ ? skyboxTexture_ : skyboxNightTexture_).use();
         skybox_.draw();
-        glDepthFunc(GL_LESS); // Rétablit la fonction de profondeur par défaut
+        glDepthFunc(GL_LESS); // On remet la fonction de profondeur par défaut pour le reste.
 
-        // Dessin des fenêtres (objets transparents) en dernier
+        // --- Dessin des objets sans contour ---
+        celShadingShader_.use();
+        setMaterial(grassMat);
+        drawGround(projView, view);
+
+        // --- Dessin des objets avec contour ---
+
+        // 1. Première passe : dessiner les objets normalement et remplir le stencil buffer
+        glEnable(GL_STENCIL_TEST);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glStencilMask(0xFF);
+        glDepthMask(GL_TRUE);
+
+        celShadingShader_.use();
+
+        // Voiture - ID 1
+        glStencilFunc(GL_ALWAYS, 1, 0xFF); // <-- Valeur 1
+        setMaterial(defaultMat);
+        carTexture_.use();
+        car_.draw(projView, view, false);
+
+        // Arbre - ID 2
+        glStencilFunc(GL_ALWAYS, 2, 0xFF); // <-- Valeur 2
+        setMaterial(grassMat);
+        treeTexture_.use();
+        drawTree(projView, view);
+
+        // Lampadaires - ID 3
+        glStencilFunc(GL_ALWAYS, 3, 0xFF); // <-- Valeur 3
+        setMaterial(streetlightMat);
+        drawStreetlights(projView, view);
+
+        // 2. Deuxième passe : dessiner les objets agrandis pour le contour
+        glStencilMask(0x00); // Désactiver l'écriture
+        // TRÈS IMPORTANT : On laisse le test de profondeur (GL_DEPTH_TEST) activé !
+
+        edgeEffectShader_.use();
+
+        // Contour Voiture (s'annule SEULEMENT si stencil == 1)
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        car_.draw(projView, view, true);
+
+        // Contour Arbre (s'annule SEULEMENT si stencil == 2)
+        glStencilFunc(GL_NOTEQUAL, 2, 0xFF);
+        drawTree(projView, view, true);
+
+        // Contour Lampadaires (s'annule SEULEMENT si stencil == 3)
+        glStencilFunc(GL_NOTEQUAL, 3, 0xFF);
+        drawStreetlights(projView, view, true);
+
+        // 3. Restaurer les états
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_STENCIL_TEST);
+
+        // --- Dessin des objets transparents (fenêtres) ---
+        // Les fenêtres sont dessinées en dernier, après les objets opaques et le skybox.
+        // Elles ne participent pas à l'effet de contour.
         setMaterial(windowMat);
         carWindowTexture_.use();
         car_.drawWindows(projView, view);

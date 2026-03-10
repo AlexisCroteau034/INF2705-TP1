@@ -13,6 +13,7 @@ using namespace glm;
 #include <map>
 
 #include "shaders.hpp"
+#include "uniform_buffer.hpp"
 
 struct Material
 {
@@ -104,26 +105,30 @@ void Car::update(float deltaTime)
     carModel = glm::rotate(carModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
-void Car::draw(glm::mat4& projView, glm::mat4& view)
+void Car::draw(glm::mat4& projView, glm::mat4& view, bool use_outline)
 {
     glm::mat4 carModel = glm::mat4(1.0f);
     carModel = glm::translate(carModel, position + glm::vec3(0.0f, 0.0f, -20.0f));
     carModel = glm::rotate(carModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f)); 
     carModel = glm::rotate(carModel, orientation.x, glm::vec3(1.0f, 0.0f, 0.0f)); 
-    drawWheels(projView, view, carModel);
-    drawFrame(projView, view, carModel);
-    drawHeadlights(projView, view, carModel);
+    drawWheels(projView, view, carModel, use_outline);
+    drawFrame(projView, view, carModel, use_outline);
+    drawHeadlights(projView, view, carModel, use_outline);
 }
     
-void Car::drawFrame(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel)
+void Car::drawFrame(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel, bool use_outline)
 {
     carModel = glm::translate(carModel, glm::vec3(0.0f, 0.25f, 0.0f));
     glm::mat4 frameMVP = projView * carModel;
-    celShadingShader->setMatrices(frameMVP, view, carModel);
+    if (use_outline) {
+        glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(frameMVP));
+    } else {
+        celShadingShader->setMatrices(frameMVP, view, carModel);
+    }
     frame_.draw();
 }
 
-void Car::drawWheel(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel, const bool isLeft, const bool isFront)
+void Car::drawWheel(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel, const bool isLeft, const bool isFront, bool use_outline)
 {
     const float OFFSET = -0.10124f;
 
@@ -139,11 +144,15 @@ void Car::drawWheel(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel, c
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, OFFSET));
 
     glm::mat4 mvp = projView * model;
-    celShadingShader->setMatrices(mvp, view, model);
+    if (use_outline) {
+        glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+    } else {
+        celShadingShader->setMatrices(mvp, view, model);
+    }
     wheel_.draw();
 }
 
-void Car::drawWheels(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel)
+void Car::drawWheels(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel, bool use_outline)
 {
     const glm::vec3 WHEEL_POSITIONS[] =
     {
@@ -164,12 +173,21 @@ void Car::drawWheels(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel)
             model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         }
 
-        drawWheel(projView, view, model, isLeft, isFront);
+        drawWheel(projView, view, model, isLeft, isFront, use_outline);
     }
 }
 
-void Car::drawBlinker(glm::mat4& projView, glm::mat4& view, glm::mat4& headlightModel, bool isLeftHeadlight)
+void Car::drawBlinker(glm::mat4& projView, glm::mat4& view, glm::mat4& headlightModel, bool isLeftHeadlight, bool use_outline)
 {
+    glm::mat4 model = glm::translate(headlightModel, glm::vec3(0.0f, 0.0f, -0.06065f));
+    glm::mat4 mvp = projView * model;
+
+    if (use_outline) {
+        glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+        blinker_.draw();
+        return;
+    }
+
     bool isBlinkerActivated = (isLeftHeadlight  && isLeftBlinkerActivated) ||
                               (!isLeftHeadlight && isRightBlinkerActivated);
 
@@ -190,14 +208,21 @@ void Car::drawBlinker(glm::mat4& projView, glm::mat4& view, glm::mat4& headlight
     }
     material->updateData(&blinkerMat, 0, sizeof(Material));
 
-    glm::mat4 model = glm::translate(headlightModel, glm::vec3(0.0f, 0.0f, -0.06065f));
-    glm::mat4 mvp = projView * model;
     celShadingShader->setMatrices(mvp, view, model);
     blinker_.draw();
 }
 
-void Car::drawLight(glm::mat4& projView, glm::mat4& view, glm::mat4& headLightModel, bool isFrontHeadlight)
+void Car::drawLight(glm::mat4& projView, glm::mat4& view, glm::mat4& headLightModel, bool isFrontHeadlight, bool use_outline)
 {
+    glm::mat4 model = glm::translate(headLightModel, glm::vec3(0.0f, 0.0f, 0.029));
+    glm::mat4 mvp = projView * model;
+
+    if (use_outline) {
+        glUniformMatrix4fv(edgeEffectShader->mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+        light_.draw();
+        return;
+    }
+
     const glm::vec3 FRONT_ON_COLOR (1.0f, 1.0f, 1.0f);
     const glm::vec3 FRONT_OFF_COLOR(0.5f, 0.5f, 0.5f);
     const glm::vec3 REAR_ON_COLOR  (1.0f, 0.1f, 0.1f);
@@ -235,14 +260,11 @@ void Car::drawLight(glm::mat4& projView, glm::mat4& view, glm::mat4& headLightMo
         material->updateData(&lightRearMat, 0, sizeof(Material));
     }
 
-    glm::mat4 model = glm::translate(headLightModel, glm::vec3(0.0f, 0.0f, Z_OFFSET));
-    glm::mat4 mvp = projView * model;
-
     celShadingShader->setMatrices(mvp, view, model);
     light_.draw();
 }
 
-void Car::drawHeadlight(glm::mat4& projView, glm::mat4& view, glm::mat4& headLightModel, bool isFrontHeadlight, bool isLeftHeadlight) 
+void Car::drawHeadlight(glm::mat4& projView, glm::mat4& view, glm::mat4& headLightModel, bool isFrontHeadlight, bool isLeftHeadlight, bool use_outline) 
 {
     glm::mat4 model = headLightModel;
 
@@ -254,11 +276,11 @@ void Car::drawHeadlight(glm::mat4& projView, glm::mat4& view, glm::mat4& headLig
         model = glm::rotate(model, glm::radians(-5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     }
 
-    drawLight(projView, view, model, isFrontHeadlight);
-    drawBlinker(projView, view, model, isLeftHeadlight);
+    drawLight(projView, view, model, isFrontHeadlight, use_outline);
+    drawBlinker(projView, view, model, isLeftHeadlight, use_outline);
 }
 
-void Car::drawHeadlights(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel)
+void Car::drawHeadlights(glm::mat4& projView, glm::mat4& view, glm::mat4& carModel, bool use_outline)
 {
     const glm::vec3 HEADLIGHT_POSITIONS[] =
     {
@@ -279,7 +301,7 @@ void Car::drawHeadlights(glm::mat4& projView, glm::mat4& view, glm::mat4& carMod
             model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f)); 
         }
 
-        drawHeadlight(projView, view, model, isFrontHeadlight, isLeftHeadlight);
+        drawHeadlight(projView, view, model, isFrontHeadlight, isLeftHeadlight, use_outline);
     }
 }
 
