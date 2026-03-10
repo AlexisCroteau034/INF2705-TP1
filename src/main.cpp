@@ -152,6 +152,7 @@ struct App : public OpenGLApplication
     , cameraOrientation_(0.0f, 0.0f)
     , currentScene_(0)
     , isMouseMotionEnabled_(false)
+    , isDay_(false)
     {
     }
 	
@@ -306,6 +307,7 @@ struct App : public OpenGLApplication
         lightsData_.spotLights[N_STREETLIGHTS+3].openingAngle = 60.f;
         
         
+        toggleSun();
         toggleStreetlight();
         updateCarLight();
         
@@ -448,25 +450,10 @@ struct App : public OpenGLApplication
     // Méthode pour le calcul des matrices initiales des arbres et des lampadaires.
     void initStaticModelMatrices()
     {
-        // ...
-        for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
-        {
-            // ...
-            
-            // TODO: À ajouter. C'est pour avoir la position de la lumière du lampadaire pour la partie 3.
-            streetlightLightPositions[i] = glm::vec3(streetlightModelMatrices_[i] * glm::vec4(-2.77, 5.2, 0.0, 1.0));
-        }
-    }
-    
-    void drawStreetlights(const glm::mat4& projView, const glm::mat4& view, bool forOutline = false)
-    {
         const float OFFSET = 17.0f;
         const float HEIGHT = -0.15f;
         const float SPACING = 10.0f;
-
-        if (!forOutline) {
-            celShadingShader_.use();
-        }
+        int streetlightIndex = 0;
 
         for (int side = 0; side < 4; ++side) {
             float angle = glm::radians(90.0f * side);
@@ -478,27 +465,43 @@ struct App : public OpenGLApplication
                 model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
                 model = glm::translate(model, glm::vec3(zPos, HEIGHT, OFFSET));
                 model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-                glm::mat4 mvp = projView * model;
 
-                if (forOutline) {
-                    glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
-                    streetlight_.draw();
-                    streetlightLight_.draw();
-                } else {
-                    // Dessin de la lumière du lampadaire
-                    if (!isDay_)
-                        setMaterial(streetlightLightMat);
-                    else
-                        setMaterial(streetlightMat);
-                    celShadingShader_.setMatrices(mvp, view, model);
-                    streetlightLight_.draw();
-                
-                    // Dessin du poteau du lampadaire
+                streetlightModelMatrices_[streetlightIndex] = model;
+                // TODO: À ajouter. C'est pour avoir la position de la lumière du lampadaire pour la partie 3.
+                streetlightLightPositions[streetlightIndex] = glm::vec3(model * glm::vec4(-2.77, 5.2, 0.0, 1.0));
+                streetlightIndex++;
+            }
+        }
+    }
+    
+    void drawStreetlights(const glm::mat4& projView, const glm::mat4& view, bool forOutline = false)
+    {
+        if (!forOutline) {
+            celShadingShader_.use();
+        }
+
+        for (unsigned int i = 0; i < N_STREETLIGHTS; i++) {
+            const glm::mat4& model = streetlightModelMatrices_[i];
+            glm::mat4 mvp = projView * model;
+
+            if (forOutline) {
+                glUniformMatrix4fv(edgeEffectShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+                streetlight_.draw();
+                streetlightLight_.draw();
+            } else {
+                // Dessin de la lumière du lampadaire
+                if (!isDay_)
+                    setMaterial(streetlightLightMat);
+                else
                     setMaterial(streetlightMat);
-                    streetlightTexture_.use();
-                    celShadingShader_.setMatrices(mvp, view, model);
-                    streetlight_.draw();
-                }
+                celShadingShader_.setMatrices(mvp, view, model);
+                streetlightLight_.draw();
+            
+                // Dessin du poteau du lampadaire
+                setMaterial(streetlightMat);
+                streetlightTexture_.use();
+                celShadingShader_.setMatrices(mvp, view, model);
+                streetlight_.draw();
             }
         }
     }
@@ -637,71 +640,64 @@ struct App : public OpenGLApplication
         }
     }
 
-    // TODO: À ajouter.
     void updateCarLight()
+{
+    if (car_.isHeadlightOn)
     {
-        if (car_.isHeadlightOn)
-        {
-            lightsData_.spotLights[N_STREETLIGHTS].ambient = glm::vec4(glm::vec3(0.01), 0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS].diffuse = glm::vec4(glm::vec3(1.0), 0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS].specular = glm::vec4(glm::vec3(0.4), 0.0f);
-            
-            lightsData_.spotLights[N_STREETLIGHTS+1].ambient = glm::vec4(glm::vec3(0.01), 0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+1].diffuse = glm::vec4(glm::vec3(1.0), 0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+1].specular = glm::vec4(glm::vec3(0.4), 0.0f);
-            
-            // TODO: Partie 3.
-            //       Utiliser car_.carModel pour calculer la nouvelle position et orientation de la lumière.
-            //       La lumière devrait suivre le véhicule qui se déplace.
-            
-            lightsData_.spotLights[N_STREETLIGHTS].position = glm::vec4(-1.6, 0.64, -0.45, 1.0f);
-            lightsData_.spotLights[N_STREETLIGHTS].direction = glm::vec3(-10, -1, 0);
-            
-            lightsData_.spotLights[N_STREETLIGHTS+1].position = glm::vec4(-1.6, 0.64, 0.45, 1.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+1].direction = glm::vec3(-10, -1, 0);
-        }
-        else
-        {
-            lightsData_.spotLights[N_STREETLIGHTS].ambient = glm::vec4(0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS].diffuse = glm::vec4(0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS].specular = glm::vec4(0.0f);
-            
-            lightsData_.spotLights[N_STREETLIGHTS+1].ambient = glm::vec4(0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+1].diffuse = glm::vec4(0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+1].specular = glm::vec4(0.0f);
-        }
+        lightsData_.spotLights[N_STREETLIGHTS].ambient = glm::vec4(glm::vec3(0.01), 0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS].diffuse = glm::vec4(glm::vec3(1.0), 0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS].specular = glm::vec4(glm::vec3(0.4), 0.0f);
         
-        if (car_.isBraking)
-        {
-            lightsData_.spotLights[N_STREETLIGHTS+2].ambient = glm::vec4(0.01, 0.0, 0.0, 0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+2].diffuse = glm::vec4(0.9, 0.1, 0.1, 0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+2].specular = glm::vec4(0.35, 0.05, 0.05, 0.0f);
-            
-            lightsData_.spotLights[N_STREETLIGHTS+3].ambient = glm::vec4(0.01, 0.0, 0.0, 0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+3].diffuse = glm::vec4(0.9, 0.1, 0.1, 0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+3].specular = glm::vec4(0.35, 0.05, 0.05, 0.0f);
-            
-            // TODO: Partie 3.
-            //       Utiliser car_.carModel pour calculer la nouvelle position et orientation de la lumière.
-            //       La lumière devrait suivre le véhicule qui se déplace.
-            
-            lightsData_.spotLights[N_STREETLIGHTS+2].position = glm::vec4(1.6, 0.64, -0.45, 1.0f);        
-            lightsData_.spotLights[N_STREETLIGHTS+2].direction = glm::vec3(10, -1, 0);
-            
-            lightsData_.spotLights[N_STREETLIGHTS+3].position = glm::vec4(1.6, 0.64, 0.45, 1.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+3].direction = glm::vec3(10, -1, 0);
-        }
-        else
-        {
-            lightsData_.spotLights[N_STREETLIGHTS+2].ambient = glm::vec4(0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+2].diffuse = glm::vec4(0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+2].specular = glm::vec4(0.0f);
-            
-            lightsData_.spotLights[N_STREETLIGHTS+3].ambient = glm::vec4(0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+3].diffuse = glm::vec4(0.0f);
-            lightsData_.spotLights[N_STREETLIGHTS+3].specular = glm::vec4(0.0f);
-        }
+        lightsData_.spotLights[N_STREETLIGHTS+1].ambient = glm::vec4(glm::vec3(0.01), 0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+1].diffuse = glm::vec4(glm::vec3(1.0), 0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+1].specular = glm::vec4(glm::vec3(0.4), 0.0f);
+        
+        // Multiplier la position par la matrice carModel, et la direction par la matrice 3x3 de carModel
+        lightsData_.spotLights[N_STREETLIGHTS].position = car_.carModel * glm::vec4(-1.6f, 0.64f, -0.45f, 1.0f);
+        lightsData_.spotLights[N_STREETLIGHTS].direction = glm::mat3(car_.carModel) * glm::vec3(-10.0f, -1.0f, 0.0f);
+        
+        lightsData_.spotLights[N_STREETLIGHTS+1].position = car_.carModel * glm::vec4(-1.6f, 0.64f, 0.45f, 1.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+1].direction = glm::mat3(car_.carModel) * glm::vec3(-10.0f, -1.0f, 0.0f);
     }
+    else
+    {
+        lightsData_.spotLights[N_STREETLIGHTS].ambient = glm::vec4(0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS].diffuse = glm::vec4(0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS].specular = glm::vec4(0.0f);
+        
+        lightsData_.spotLights[N_STREETLIGHTS+1].ambient = glm::vec4(0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+1].diffuse = glm::vec4(0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+1].specular = glm::vec4(0.0f);
+    }
+    
+    if (car_.isBraking)
+    {
+        lightsData_.spotLights[N_STREETLIGHTS+2].ambient = glm::vec4(0.01, 0.0, 0.0, 0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+2].diffuse = glm::vec4(0.9, 0.1, 0.1, 0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+2].specular = glm::vec4(0.35, 0.05, 0.05, 0.0f);
+        
+        lightsData_.spotLights[N_STREETLIGHTS+3].ambient = glm::vec4(0.01, 0.0, 0.0, 0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+3].diffuse = glm::vec4(0.9, 0.1, 0.1, 0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+3].specular = glm::vec4(0.35, 0.05, 0.05, 0.0f);
+        
+        // Même logique pour les feux de freinage
+        lightsData_.spotLights[N_STREETLIGHTS+2].position = car_.carModel * glm::vec4(1.6f, 0.64f, -0.45f, 1.0f);        
+        lightsData_.spotLights[N_STREETLIGHTS+2].direction = glm::mat3(car_.carModel) * glm::vec3(10.0f, -1.0f, 0.0f);
+        
+        lightsData_.spotLights[N_STREETLIGHTS+3].position = car_.carModel * glm::vec4(1.6f, 0.64f, 0.45f, 1.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+3].direction = glm::mat3(car_.carModel) * glm::vec3(10.0f, -1.0f, 0.0f);
+    }
+    else
+    {
+        lightsData_.spotLights[N_STREETLIGHTS+2].ambient = glm::vec4(0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+2].diffuse = glm::vec4(0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+2].specular = glm::vec4(0.0f);
+        
+        lightsData_.spotLights[N_STREETLIGHTS+3].ambient = glm::vec4(0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+3].diffuse = glm::vec4(0.0f);
+        lightsData_.spotLights[N_STREETLIGHTS+3].specular = glm::vec4(0.0f);
+    }
+}
 
     // TODO: À ajouter. Pas de modification.
     void setMaterial(Material& mat)

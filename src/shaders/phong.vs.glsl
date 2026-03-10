@@ -73,28 +73,27 @@ layout (std140) uniform LightingBlock
 
 void main()
 {
-    // Attribs
     attribsOut.texCoords = texCoords;
-    attribsOut.color = color;
-    
-    // TODO: Écriture des attributs de sortie
-    //       Si la normale est nul, lui donner une valeur qui pointe vers le haut.
 
+    attribsOut.texCoords = texCoords;
+    
+    if (length(color) == 0.0) {
+        attribsOut.color = vec3(1.0, 1.0, 1.0);
+    } else {
+        attribsOut.color = color;
+    }
+    
     if (length(normal) == 0.0) {
         attribsOut.normal = vec3(0.0, 1.0, 0.0);
     } else {
         attribsOut.normal = normalize(normalMatrix * normal);
     }
 
-    // Lights
     vec4 posInView = modelView * vec4(position, 1.0);
     lightsOut.obsPos = posInView.xyz;
 
-    // Directional light
     lightsOut.dirLightDir = normalize(mat3(view) * dirLight.direction);
 
-    // Spot lights
-    // TODO: Écriture des propriétés de lumières en sortie
     for(int i = 0; i < nSpotLights; i++)
     {
         vec4 spotPosInView = view * vec4(spotLights[i].position, 1.0);

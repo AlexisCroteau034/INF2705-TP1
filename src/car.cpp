@@ -101,8 +101,9 @@ void Car::update(float deltaTime)
         blinkerTimer = 0.f;
     }
     carModel = glm::mat4(1.0f);
-    carModel = glm::translate(carModel, position);
+    carModel = glm::translate(carModel, position + glm::vec3(0.0f, 0.0f, -20.0f));
     carModel = glm::rotate(carModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+    carModel = glm::rotate(carModel, orientation.x, glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
 void Car::draw(const glm::mat4& projView, const glm::mat4& view, bool use_outline)
@@ -111,8 +112,8 @@ void Car::draw(const glm::mat4& projView, const glm::mat4& view, bool use_outlin
     carModel = glm::translate(carModel, position + glm::vec3(0.0f, 0.0f, -20.0f));
     carModel = glm::rotate(carModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f)); 
     carModel = glm::rotate(carModel, orientation.x, glm::vec3(1.0f, 0.0f, 0.0f)); 
-    drawWheels(projView, view, carModel, use_outline);
     drawFrame(projView, view, carModel, use_outline);
+    drawWheels(projView, view, carModel, use_outline);
     drawHeadlights(projView, view, carModel, use_outline);
 }
     
@@ -280,11 +281,13 @@ void Car::drawHeadlights(const glm::mat4& projView, const glm::mat4& view, const
 {
     const glm::vec3 HEADLIGHT_POSITIONS[] =
     {
-        glm::vec3(-1.9650f, 0.38f, -0.45f),
-        glm::vec3(-1.9650f, 0.38f,  0.45f),
+        glm::vec3(-1.9650f, 0.64f, -0.45f),
+        glm::vec3(-1.9650f, 0.64f,  0.45f),
         glm::vec3( 2.0019f, 0.38f, -0.45f),
         glm::vec3( 2.0019f, 0.38f,  0.45f)
     };
+
+    glm::mat4 baseModel = glm::translate(carModel, glm::vec3(0.0f, 0.25f, 0.0f));
 
     for (int i = 0; i < 4; ++i) {
         glm::mat4 model = carModel;
@@ -294,7 +297,7 @@ void Car::drawHeadlights(const glm::mat4& projView, const glm::mat4& view, const
         bool isLeftHeadlight = HEADLIGHT_POSITIONS[i].z > 0;
 
         if (isLeftHeadlight) {
-            model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f)); 
+            model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)); 
         }
 
         drawHeadlight(projView, view, model, isFrontHeadlight, isLeftHeadlight, use_outline);
