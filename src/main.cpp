@@ -27,6 +27,7 @@
 #include "shaders.hpp"
 #include "textures.hpp"
 #include "uniform_buffer.hpp"
+#include "shader_storage_buffer.hpp"
 
 #define CHECK_GL_ERROR printGLError(__FILE__, __LINE__)
 
@@ -118,6 +119,72 @@ Material windowMat =
     2.0f
 };
 
+// Partie 1
+Material bezierMat = 
+{
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f},
+    1.0f
+};
+
+struct BezierCurve
+{
+    glm::vec3 p0;
+    glm::vec3 c0;
+    glm::vec3 c1;        
+    glm::vec3 p1;
+};
+
+BezierCurve curves[5] = 
+{
+    {
+        glm::vec3(-28.7912, 1.4484, -1.7349),
+        glm::vec3(-28.0654, 1.4484, 6.1932),
+        glm::vec3(-10.3562, 8.8346, 6.5997),
+        glm::vec3(-7.6701, 8.8346, 8.9952)
+    },
+    {
+        glm::vec3(-7.6701, 8.8346, 8.9952),
+        glm::vec3(-3.9578, 8.8346, 12.3057),
+        glm::vec3(-2.5652, 2.4770, 13.6914),
+        glm::vec3(2.5079, 1.4484, 11.6581)
+    },
+    {
+        glm::vec3(2.5079, 1.4484, 11.6581),
+        glm::vec3(7.5810, 0.4199, 9.6248),
+        glm::vec3(16.9333, 3.3014, 5.7702),
+        glm::vec3(28.4665, 6.6072, 3.9096)
+    },
+    {
+        glm::vec3(28.4665, 6.6072, 3.9096),
+        glm::vec3(39.9998, 9.9131, 2.0491),
+        glm::vec3(30.8239, 5.7052, -15.2108),
+        glm::vec3(21.3852, 5.7052, -9.0729)
+    },
+    {
+        glm::vec3(21.3852, 5.7052, -9.0729),
+        glm::vec3(11.9464, 5.7052, -2.9349),
+        glm::vec3(-1.0452, 1.4484, -12.4989),
+        glm::vec3(-12.2770, 1.4484, -13.2807)
+    }
+};
+
+
+// Partie 3
+// Ne pas modifier
+struct Particle
+{
+    glm::vec3 position;
+    GLfloat zOrientation;
+    glm::vec4 velocity; // vec3, but padded
+    glm::vec4 color;
+    glm::vec2 size; 
+    GLfloat timeToLive;
+    GLfloat maxTimeToLive;
+};
+
 struct Pos
 {
     GLfloat x;
@@ -149,6 +216,9 @@ struct App : public OpenGLApplication
     , currentScene_(0)
     , isMouseMotionEnabled_(false)
     , isDay_(false)
+    , totalTime(0.0)       
+    , timerParticles_(0.0) 
+    , nParticles_(0)
     {
     }
 	
@@ -167,6 +237,31 @@ struct App : public OpenGLApplication
 			"Souris : tourner la caméra" "\n"
 			"Espace : activer/désactiver la souris." "\n"
 		);
+
+        // TODO: Création des nouveaux shaders
+        
+        // Partie 1-2
+        // TODO: Initialisation des meshes (béziers, patches)
+
+
+        glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
+        
+        
+        
+        // Partie 3
+        // TODO: Allocation des SSBO.
+        //       Allouer suffisament d'espace pour le nombre maximal de particules.
+        //       Seulement le buffer en entrée à besoin d'être initialisé à 0.
+        //       Réfléchisser au type d'usage.
+        
+        // TODO: Créer un vao pour le dessin des particules et activer les attributs nécessaires.
+
+
+        // TODO: Création des nouveaux shaders.
+        
+        
+        // TODO: Initialisation de la nouvelle texture pour les particules.
+        // "../textures/smoke.png"
 
         glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glEnable(GL_DEPTH_TEST);
@@ -295,6 +390,9 @@ struct App : public OpenGLApplication
 
 	void drawFrame() override
 	{
+        // TODO: Au besoin, ajouter la recharge de vos nouveaux shaders
+        //       après if (ImGui::Button("Reload Shaders")).
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         
         ImGui::Begin("Scene Parameters");
@@ -664,6 +762,8 @@ struct App : public OpenGLApplication
         float fov = glm::radians(70.0f);
         float aspect = getWindowAspect();
         float near = 0.1f;
+
+        // TODO: Pertinent de modifier la distance ici.
         float far = 300.0f;
         
         return glm::perspective(fov, aspect, near, far);
@@ -672,6 +772,12 @@ struct App : public OpenGLApplication
     void sceneMain()
     {    
         ImGui::Begin("Scene Parameters");
+        ImGui::SliderInt("Bezier Number Of Points", (int*)&bezierNPoints, 0, 16);
+        if (ImGui::Button("Animate Camera"))
+        {
+            isAnimatingCamera = true;
+            cameraMode = 1;
+        }
         if (ImGui::Button("Toggle Day/Night"))
         {
             isDay_ = !isDay_;
@@ -698,6 +804,90 @@ struct App : public OpenGLApplication
         glm::mat4 view = getViewMatrix();
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 projView = proj * view;
+
+        if (isAnimatingCamera)
+        {
+            if (cameraAnimation < 5)
+            {
+                // TODO: Animation de la caméra
+                // cameraPosition_ = ...
+            
+                cameraAnimation += deltaTime_ / 3.0;
+            }
+            else
+            {
+                // Remise à 0 de l'orientation
+                glm::vec3 distance = car_.position - cameraPosition_;               
+                
+                float horizontalDistance = sqrt(distance.x * distance.x + distance.z * distance.z);
+
+                cameraOrientation_.y = atan2(-distance.x, -distance.z);
+                cameraOrientation_.x = atan2(distance.y, horizontalDistance);
+                
+                cameraAnimation = 0.f;
+                isAnimatingCamera = false;
+                cameraMode = 0;
+            }
+        }
+        
+        // ...
+        
+        bool hasNumberOfSidesChanged = bezierNPoints != oldBezierNPoints;
+        if (hasNumberOfSidesChanged)
+        {
+            oldBezierNPoints = bezierNPoints;
+            
+            // TODO: Calcul et mise à jour de la courbe
+        }
+
+        // TODO: Dessin de la courbe
+        // glDraw...
+        
+        
+        // TODO: Dessin du gazon
+        // glDraw...
+        
+        
+        // ...
+        
+        // Partie 3
+        // TODO: Attention à l'endroit où vous faites votre dessin, la texture des particules est transparente.
+        
+        // Particles    
+        totalTime += deltaTime_;
+        timerParticles_ += deltaTime_;        
+        const float particlesSpawnInterval = 0.2f;
+        
+        unsigned int particlesToAdd = timerParticles_ / particlesSpawnInterval;
+        timerParticles_ -= particlesToAdd * particlesSpawnInterval;
+        
+        nParticles_ += particlesToAdd;
+        if (nParticles_ > MAX_PARTICLES_)
+            nParticles_ = MAX_PARTICLES_;
+
+        // Particles update
+        
+        // TODO: Mise à jour des données à l'aide du compute shader
+        //       Envoyer vos uniforms.
+        
+        // Utiliser car_.carModel pour calculer la nouvelle position et direction d'émission de particule.
+        // glm::vec3 exhaustPos = vec3(2.0, 0.24, -0.43);
+        // glm::vec3 exhaustDir = vec3(1, 0, 0);
+        
+        // TODO: Configurer les buffers d'entrée et de sortie.
+        
+        // TODO: Envois de la commande de calcul.
+        //       Pas besoin d'optimiser le nombre de work group vs la taille local (dans le shader).
+        
+        
+        // Particles draw
+        
+        // TODO: Dessin des particules. Utiliser le nombre de particules actuellement utilisées.
+        //       Utiliser la texture et envoyer vos uniforms.
+        //       Il sera nécessaire de spécifier les entrée en spécifiant le buffer d'entrée.
+        //       Activer le blending et restaurer l'état du contexte modifié.
+        
+        // TODO: Interchanger les deux buffers, celui en entrée devient la sortie, et vice versa.
 
         // Sky box
         glDepthFunc(GL_LEQUAL);
@@ -771,6 +961,34 @@ struct App : public OpenGLApplication
 private:
     
     Car car_;
+
+    unsigned int bezierNPoints = 3; // Nombre de points supplémentaires sur la courbe, 0 est une ligne droite
+    unsigned int oldBezierNPoints = 0;
+    
+    int cameraMode = 0;
+    float cameraAnimation = 0.f;
+    bool isAnimatingCamera = false;
+
+    // Partie 1-2
+    // TODO: Ajouter les attributs de vbo, ebo, vao nécessaire
+    
+    
+    
+    // Partie 3
+    // TODO: Attributs supplémentaires
+    GLuint vaoParticles_;
+    
+    float totalTime;
+    float timerParticles_;
+    
+    static const unsigned int MAX_PARTICLES_ = 64;
+    unsigned int nParticles_;    
+    
+    // TODO: Ajouter vos shaders
+    // TODO: Ajouter la texture de fumé
+    
+    // Ssbo
+    ShaderStorageBuffer particles_[2];
     
     // Matrices statiques
     static constexpr unsigned int N_STREET_PATCHES = 7*4+4;

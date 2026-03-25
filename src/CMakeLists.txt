@@ -15,6 +15,7 @@ set(ALL_FILES
     "shader_program.cpp"
     "shaders.cpp"
     "uniform_buffer.cpp"
+    "shader_storage_buffer.cpp"
     # "../inf2705/Mesh.hpp"
     "../inf2705/OpenGLApplication.hpp"
     # "../inf2705/OrbitCamera.hpp"
