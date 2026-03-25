@@ -242,6 +242,22 @@ struct App : public OpenGLApplication
         
         // Partie 1-2
         // TODO: Initialisation des meshes (béziers, patches)
+        // Initialisation de la Spline Bézier
+        glGenVertexArrays(1, &vaoBezier_);
+        glGenBuffers(1, &vboBezier_);
+        
+        glBindVertexArray(vaoBezier_);
+        glBindBuffer(GL_ARRAY_BUFFER, vboBezier_);
+
+        // Allocation de l'espace (Max 16 points internes + 2 extrémités par courbe = 18. Pour 5 courbes = 90 points environ)
+        const int maxPoints = 150; 
+        glBufferData(GL_ARRAY_BUFFER, maxPoints * sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        // Position attribut (location = 0)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+
+        glBindVertexArray(0);
 
 
         glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
@@ -769,6 +785,19 @@ struct App : public OpenGLApplication
         return glm::perspective(fov, aspect, near, far);
     }
 
+    glm::vec3 calculateBezier(BezierCurve& curve, float t) {
+        float u = 1.0f - t;
+
+        const float b0 = (float)std::pow(u, 3);
+        const float b1 = 3.0f * t * u * u;
+        const float b2 = 3.0f * t * t * u;
+        const float b3 = (float)std::pow(t, 3);
+
+        glm::vec3 p = b0 * curve.p0 + b1 * curve.c0 + b2 * curve.c1 + b3 * curve.p1;
+
+        return p;
+    }
+
     void sceneMain()
     {    
         ImGui::Begin("Scene Parameters");
@@ -809,39 +838,71 @@ struct App : public OpenGLApplication
         {
             if (cameraAnimation < 5)
             {
-                // TODO: Animation de la caméra
-                // cameraPosition_ = ...
-            
-                cameraAnimation += deltaTime_ / 3.0;
-            }
-            else
-            {
-                // Remise à 0 de l'orientation
+                // 1. Trouver sur quelle courbe on se trouve (0 à 4)
+                int curveIndex = glm::clamp(static_cast<int>(floor(cameraAnimation)), 0, 4);
+                float t = cameraAnimation - static_cast<float>(curveIndex);
+
+                // 2. Déplacer la caméra sur la spline
+                cameraPosition_ = calculateBezier(curves[curveIndex], t);
+
+                // 3. ORIENTER la caméra vers la voiture À CHAQUE FRAME
                 glm::vec3 distance = car_.position - cameraPosition_;               
-                
                 float horizontalDistance = sqrt(distance.x * distance.x + distance.z * distance.z);
 
                 cameraOrientation_.y = atan2(-distance.x, -distance.z);
                 cameraOrientation_.x = atan2(distance.y, horizontalDistance);
-                
+            
+                // 4. Avancer l'animation
+                cameraAnimation += deltaTime_ / 3.0;
+            }
+            else
+            {
+                // Fin de l'animation : on réinitialise les variables
                 cameraAnimation = 0.f;
                 isAnimatingCamera = false;
                 cameraMode = 0;
             }
         }
         
-        // ...
-        
         bool hasNumberOfSidesChanged = bezierNPoints != oldBezierNPoints;
         if (hasNumberOfSidesChanged)
         {
             oldBezierNPoints = bezierNPoints;
             
-            // TODO: Calcul et mise à jour de la courbe
+            std::vector<glm::vec3> bezierPoints;
+            int nSegments = bezierNPoints + 1;
+            
+            for (int i = 0; i < 5; ++i) 
+            {
+                for (int j = 0; j <= nSegments; ++j) 
+                {
+                    // Éviter de dupliquer les points de jointure entre les 5 courbes
+                    if (i > 0 && j == 0) continue; 
+                    
+                    float t = static_cast<float>(j) / static_cast<float>(nSegments);
+                    bezierPoints.push_back(calculateBezier(curves[i], t));
+                }
+            }
+            
+            numBezierVerts_ = bezierPoints.size();
+            
+            glBindBuffer(GL_ARRAY_BUFFER, vboBezier_);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, numBezierVerts_ * sizeof(glm::vec3), bezierPoints.data());
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
 
         // TODO: Dessin de la courbe
         // glDraw...
+        celShadingShader_.use();
+        setMaterial(bezierMat);
+        
+        glm::mat4 bezierModel = glm::mat4(1.0f);
+        glm::mat4 bezierMVP = projView * bezierModel;
+        celShadingShader_.setMatrices(bezierMVP, view, bezierModel);
+
+        glBindVertexArray(vaoBezier_);
+        glDrawArrays(GL_LINE_STRIP, 0, numBezierVerts_);
+        glBindVertexArray(0);
         
         
         // TODO: Dessin du gazon
@@ -971,7 +1032,9 @@ private:
 
     // Partie 1-2
     // TODO: Ajouter les attributs de vbo, ebo, vao nécessaire
-    
+    GLuint vaoBezier_ = 0;
+    GLuint vboBezier_ = 0;
+    int numBezierVerts_ = 0;
     
     
     // Partie 3

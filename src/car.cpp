@@ -25,7 +25,7 @@ struct Material
 };
 
 Car::Car()
-: position(0.0f, 0.0f, 0.0f), orientation(0.0f, 0.0f), speed(0.f)
+: position(0.0f, 0.0f, -20.0f), orientation(0.0f, 0.0f), speed(0.f)
 , wheelsRollAngle(0.f), steeringAngle(0.f)
 , isHeadlightOn(false), isBraking(false)
 , isLeftBlinkerActivated(false), isRightBlinkerActivated(false)
@@ -101,7 +101,7 @@ void Car::update(float deltaTime)
         blinkerTimer = 0.f;
     }
     carModel = glm::mat4(1.0f);
-    carModel = glm::translate(carModel, position + glm::vec3(0.0f, 0.0f, -20.0f));
+    carModel = glm::translate(carModel, position);
     carModel = glm::rotate(carModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f));
     carModel = glm::rotate(carModel, orientation.x, glm::vec3(1.0f, 0.0f, 0.0f));
 }
@@ -109,7 +109,7 @@ void Car::update(float deltaTime)
 void Car::draw(const glm::mat4& projView, const glm::mat4& view, bool useOutline)
 {
     glm::mat4 carModel = glm::mat4(1.0f);
-    carModel = glm::translate(carModel, position + glm::vec3(0.0f, 0.0f, -20.0f));
+    carModel = glm::translate(carModel, position);
     carModel = glm::rotate(carModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f)); 
     carModel = glm::rotate(carModel, orientation.x, glm::vec3(1.0f, 0.0f, 0.0f)); 
     drawFrame(projView, view, carModel, useOutline);
@@ -321,7 +321,7 @@ void Car::drawWindows(const glm::mat4& projView, const glm::mat4& view)
     glDisable(GL_CULL_FACE);
 
     glm::mat4 carDrawModel = glm::mat4(1.0f);
-    carDrawModel = glm::translate(carDrawModel, position + glm::vec3(0.0f, 0.0f, -20.0f));
+    carDrawModel = glm::translate(carDrawModel, position);
     carDrawModel = glm::rotate(carDrawModel, orientation.y, glm::vec3(0.0f, 1.0f, 0.0f)); 
     carDrawModel = glm::rotate(carDrawModel, orientation.x, glm::vec3(1.0f, 0.0f, 0.0f));
 
