@@ -259,10 +259,38 @@ struct App : public OpenGLApplication
 
         glBindVertexArray(0);
 
+        glGenVertexArrays(1, &vaoGrass_);
+        glGenBuffers(1, &vboGrass_);
+        glBindVertexArray(vaoGrass_);
+        glBindBuffer(GL_ARRAY_BUFFER, vboGrass_);
 
-        glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
-        
-        
+        std::vector<glm::vec3> patchVertices;
+        const float size = 50.0f; // Taille correspondant au sol
+        const int divisions = 6; // Plus il y a de divisions, plus le calcul de distance est précis
+        const float step = size / divisions;
+
+        for(int i = 0; i < divisions; i++) {
+            for(int j = 0; j < divisions; j++) {
+                float x = -size / 2.0f + i * step;
+                float z = -size / 2.0f + j * step;
+
+                // Premier triangle du carré
+                patchVertices.push_back(glm::vec3(x, 0, z));
+                patchVertices.push_back(glm::vec3(x + step, 0, z));
+                patchVertices.push_back(glm::vec3(x, 0, z + step));
+            
+                // Deuxième triangle du carré
+                patchVertices.push_back(glm::vec3(x + step, 0, z));
+                patchVertices.push_back(glm::vec3(x + step, 0, z + step));
+                patchVertices.push_back(glm::vec3(x, 0, z + step));
+            }
+        }
+        numGrassVerts_ = patchVertices.size();
+
+        glBufferData(GL_ARRAY_BUFFER, patchVertices.size() * sizeof(glm::vec3), patchVertices.data(), GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+        glBindVertexArray(0);
         
         // Partie 3
         // TODO: Allocation des SSBO.
@@ -282,10 +310,12 @@ struct App : public OpenGLApplication
         glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
+        glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
         
         edgeEffectShader_.create();
         celShadingShader_.create();
         skyShader_.create();
+        grassShader_.create();
         
         car_.edgeEffectShader = &edgeEffectShader_;
         car_.celShadingShader = &celShadingShader_;
@@ -907,6 +937,20 @@ struct App : public OpenGLApplication
         
         // TODO: Dessin du gazon
         // glDraw...
+        glm::mat4 groundModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.15f, 0.0f));
+
+        grassShader_.use();
+        glUniformMatrix4fv(grassShader_.modelViewULoc, 1, GL_FALSE, glm::value_ptr(view * groundModel));
+        glUniformMatrix4fv(grassShader_.mvpULoc, 1, GL_FALSE, glm::value_ptr(projView * groundModel));
+
+        glDisable(GL_CULL_FACE);
+
+        glBindVertexArray(vaoGrass_);
+        glPatchParameteri(GL_PATCH_VERTICES, 3);
+        glDrawArrays(GL_PATCHES, 0, numGrassVerts_);
+        glBindVertexArray(0);
+
+        glEnable(GL_CULL_FACE);
         
         
         // ...
@@ -1035,6 +1079,10 @@ private:
     GLuint vaoBezier_ = 0;
     GLuint vboBezier_ = 0;
     int numBezierVerts_ = 0;
+
+    GLuint vaoGrass_ = 0;
+    GLuint vboGrass_ = 0;
+    int numGrassVerts_ = 0;
     
     
     // Partie 3
@@ -1063,6 +1111,7 @@ private:
     EdgeEffect edgeEffectShader_;
     CelShading celShadingShader_;
     Sky skyShader_;
+    GrassShader grassShader_;
     
     // Textures
     Texture2D grassTexture_;

@@ -45,3 +45,31 @@ protected:
     virtual void getAllUniformLocations() override;
     virtual void assignAllUniformBlockIndexes() override;
 };
+
+class GrassShader : public ShaderProgram
+{
+public:
+    GLuint mvpULoc;
+    GLuint modelViewULoc;
+
+protected:
+    void load() override
+    {
+        name_ = "GrassShader";
+        loadShaderSource(GL_VERTEX_SHADER, "./shaders/grass.vs.glsl");
+        loadShaderSource(GL_TESS_CONTROL_SHADER, "./shaders/grass.tcs.glsl");
+        loadShaderSource(GL_TESS_EVALUATION_SHADER, "./shaders/grass.tes.glsl");
+        
+        // Nous décommenterons ces deux lignes pour les étapes 4 et 5 !
+        loadShaderSource(GL_GEOMETRY_SHADER, "./shaders/grass.gs.glsl");
+        loadShaderSource(GL_FRAGMENT_SHADER, "./shaders/grass.fs.glsl");
+        
+        link();
+    }
+
+    void getAllUniformLocations() override
+    {
+        mvpULoc = glGetUniformLocation(id_, "mvp");
+        modelViewULoc = glGetUniformLocation(id_, "modelView");
+    }
+};

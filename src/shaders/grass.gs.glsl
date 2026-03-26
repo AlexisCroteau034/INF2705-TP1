@@ -3,15 +3,18 @@
 // TODO: À remplir
 // layout() in;
 // layout() out;
+layout (points) in;
+layout (triangle_strip, max_vertices = 3) out;
 
-in ATTRIBS_TES_OUT
-{
-    // TODO: Ajouter les attributs si nécessaire
-} attribsIn[];
+// in ATTRIBS_TES_OUT
+// {
+//     // TODO: Ajouter les attributs si nécessaire
+// } attribsIn[];
 
 out ATTRIBS_GS_OUT
 {
     // TODO: Ajouter les attributs si nécessaire
+    float heightRatio;
 } attribsOut;
 
 
@@ -40,4 +43,40 @@ void main()
     const float varHeight = 0.4;
     
     // Pour finir, émission des différents points. N'oublier pas d'écrire chaque attribut de sortie.
+    vec4 center = gl_in[0].gl_Position;
+    
+    // Facteurs aléatoires basés sur la position
+    float r = rand(center.xz);
+    float currentWidth = baseWidth + r * varWidth;
+    float currentHeight = baseHeight + r * varHeight;
+    
+    // Rotation aléatoire en Y
+    float angle = r * 6.28318; // [0, 2pi]
+    mat3 rotY = mat3(
+        cos(angle), 0.0, sin(angle),
+        0.0, 1.0, 0.0,
+        -sin(angle), 0.0, cos(angle)
+    );
+
+    // Points de base
+    vec3 right = rotY * vec3(currentWidth, 0.0, 0.0);
+    vec3 left = rotY * vec3(-currentWidth, 0.0, 0.0);
+    
+    // Point du haut (légèrement décalé pour simuler la pliure en X demandée)
+    vec3 top = rotY * vec3(0.0, currentHeight, currentHeight * 0.2); 
+
+    // Émission du brin d'herbe (Triangle)[cite: 3]
+    attribsOut.heightRatio = 0.0; // Base foncée
+    gl_Position = mvp * vec4(center.xyz + left, 1.0);
+    EmitVertex();
+    
+    attribsOut.heightRatio = 0.0; // Base foncée
+    gl_Position = mvp * vec4(center.xyz + right, 1.0);
+    EmitVertex();
+    
+    attribsOut.heightRatio = 1.0; // Haut clair
+    gl_Position = mvp * vec4(center.xyz + top, 1.0);
+    EmitVertex();
+    
+    EndPrimitive();
 }
