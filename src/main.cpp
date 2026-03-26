@@ -265,7 +265,7 @@ struct App : public OpenGLApplication
         glBindBuffer(GL_ARRAY_BUFFER, vboGrass_);
 
         std::vector<glm::vec3> patchVertices;
-        const float size = 50.0f; // Taille correspondant au sol
+        const float size = 35.0f; // Taille correspondant au sol
         const int divisions = 6; // Plus il y a de divisions, plus le calcul de distance est précis
         const float step = size / divisions;
 
@@ -937,7 +937,7 @@ struct App : public OpenGLApplication
         
         // TODO: Dessin du gazon
         // glDraw...
-        glm::mat4 groundModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.15f, 0.0f));
+        glm::mat4 groundModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
 
         grassShader_.use();
         glUniformMatrix4fv(grassShader_.modelViewULoc, 1, GL_FALSE, glm::value_ptr(view * groundModel));
