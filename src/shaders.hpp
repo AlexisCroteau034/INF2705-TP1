@@ -53,23 +53,31 @@ public:
     GLuint modelViewULoc;
 
 protected:
-    void load() override
-    {
-        name_ = "GrassShader";
-        loadShaderSource(GL_VERTEX_SHADER, "./shaders/grass.vs.glsl");
-        loadShaderSource(GL_TESS_CONTROL_SHADER, "./shaders/grass.tcs.glsl");
-        loadShaderSource(GL_TESS_EVALUATION_SHADER, "./shaders/grass.tes.glsl");
-        
-        // Nous décommenterons ces deux lignes pour les étapes 4 et 5 !
-        loadShaderSource(GL_GEOMETRY_SHADER, "./shaders/grass.gs.glsl");
-        loadShaderSource(GL_FRAGMENT_SHADER, "./shaders/grass.fs.glsl");
-        
-        link();
-    }
+    virtual void load() override;
+    virtual void getAllUniformLocations() override;
+};
 
-    void getAllUniformLocations() override
-    {
-        mvpULoc = glGetUniformLocation(id_, "mvp");
-        modelViewULoc = glGetUniformLocation(id_, "modelView");
-    }
+class ParticleComputeShader : public ShaderProgram
+{
+public:
+    GLuint timeULoc;
+    GLuint deltaTimeULoc;
+    GLuint emitterPositionULoc;
+    GLuint emitterDirectionULoc;
+
+protected:
+    virtual void load() override;
+    virtual void getAllUniformLocations() override;
+};
+
+class ParticleDrawShader : public ShaderProgram
+{
+public:
+    GLuint projectionULoc;
+    GLuint modelViewULoc;
+    GLuint textureSamplerULoc;
+
+protected:
+    virtual void load() override;
+    virtual void getAllUniformLocations() override;
 };

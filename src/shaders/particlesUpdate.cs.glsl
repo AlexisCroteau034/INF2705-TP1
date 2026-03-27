@@ -2,6 +2,7 @@
 
 // TODO: À remplir
 // layout() in;
+layout(local_size_x = 64) in;
 
 struct Particle
 {
@@ -55,5 +56,65 @@ void main()
     //          - La couleur devient blanche de façon linéaire selon le temps de vie.
     //          - L'opacité est à 0.2 et a un effet de fade in/out de [0, 0.2] et [0.8, 1].
     //          - La taille augmente de façon linéaire jusqu'à 0.5 unité en fonction du temps de vie.
+
+    uint index = gl_GlobalInvocationID.x;
+    
+    // Récupérer la particule courante depuis le buffer d'entrée
+    Particle p = dataIn.particles[index];
+    
+    // Réduire le temps de vie
+    p.timeToLive -= deltaTime;
+    
+    // Vérifier si la particule est "morte" et nécessite une réinitialisation
+    if (p.timeToLive <= 0.0)
+    {
+        // Initialisation de la particule
+        p.position = emitterPosition;
+        
+        // Orientation aléatoire entre 0 et 2π
+        p.zOrientation = rand01() * 6.28318530718; 
+        
+        // Direction de l'émetteur (0.3 unité/s) + mouvement naturel vers le haut (0.2 unité/s)
+        p.velocity = (emitterDirection * 0.3) + vec3(0.0, 0.2, 0.0);
+        
+        // Couleur initiale grise (0.5), l'opacité sera gérée dans la mise à jour
+        p.color = vec4(0.5, 0.5, 0.5, 0.0);
+        
+        // Taille initiale de 0.2
+        p.size = vec2(0.2, 0.2);
+        
+        // Temps de vie aléatoire entre 1.5 et 2.0
+        p.maxTimeToLive = 1.5 + (rand01() * 0.5);
+        p.timeToLive = p.maxTimeToLive;
+    }
+    else
+    {
+        // Mise à jour de la particule
+        
+        // Méthode d'Euler pour la position
+        p.position += p.velocity * deltaTime;
+        
+        // Vitesse angulaire constante
+        p.zOrientation += 0.5 * deltaTime;
+        
+        // Calcul du ratio de vie restant (de 1.0 à la naissance vers 0.0 à la mort)
+        float lifeRatio = p.timeToLive / p.maxTimeToLive;
+        
+        // Interpolation linéaire de la couleur : gris (0.5) vers blanc (1.0)
+        vec3 rgbColor = mix(vec3(1.0), vec3(0.5), lifeRatio);
+        
+        // Effet de fade in/out avec smoothstep (Opacité max à 0.2)
+        // smoothstep(0.0, 0.2) gère la fin de vie (fade out)
+        // (1.0 - smoothstep(0.8, 1.0)) gère le début de vie (fade in)
+        float fade = smoothstep(0.0, 0.2, lifeRatio) * (1.0 - smoothstep(0.8, 1.0, lifeRatio));
+        p.color = vec4(rgbColor, 0.2 * fade);
+        
+        // Augmentation de la taille de façon linéaire de 0.2 à 0.5
+        float currentSize = mix(0.5, 0.2, lifeRatio);
+        p.size = vec2(currentSize, currentSize);
+    }
+    
+    // Écrire les données mises à jour dans le buffer de sortie
+    dataOut.particles[index] = p;
 }
 

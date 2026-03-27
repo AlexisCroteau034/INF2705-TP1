@@ -297,15 +297,42 @@ struct App : public OpenGLApplication
         //       Allouer suffisament d'espace pour le nombre maximal de particules.
         //       Seulement le buffer en entrée à besoin d'être initialisé à 0.
         //       Réfléchisser au type d'usage.
+
+        std::vector<Particle> initialParticles(MAX_PARTICLES_, Particle{}); // Initialise avec des 0
+        particles_[0].allocate(initialParticles.data(), MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_DRAW);
+        // Le deuxième buffer n'a pas besoin de données initiales, juste de l'espace alloué
+        particles_[1].allocate(nullptr, MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_DRAW);
         
         // TODO: Créer un vao pour le dessin des particules et activer les attributs nécessaires.
-
+        glGenVertexArrays(1, &vaoParticles_);
+        glBindVertexArray(vaoParticles_);
+        particles_[0].bindAsArray();
+            
+        GLsizei stride = sizeof(Particle);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, position));
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, zOrientation));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, velocity));
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, color));
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, size));
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, timeToLive));
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, maxTimeToLive));
+        glBindVertexArray(0);
 
         // TODO: Création des nouveaux shaders.
-        
+        particleComputeShader_.create();
+        particleDrawShader_.create(); 
         
         // TODO: Initialisation de la nouvelle texture pour les particules.
-        // "../textures/smoke.png"
+        smokeTexture_.load("../textures/smoke.png");
+        smokeTexture_.setWrap(GL_CLAMP_TO_EDGE);
+        smokeTexture_.setFiltering(GL_LINEAR);
 
         glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glEnable(GL_DEPTH_TEST);
@@ -978,12 +1005,27 @@ struct App : public OpenGLApplication
         // Utiliser car_.carModel pour calculer la nouvelle position et direction d'émission de particule.
         // glm::vec3 exhaustPos = vec3(2.0, 0.24, -0.43);
         // glm::vec3 exhaustDir = vec3(1, 0, 0);
-        
+
+        particleComputeShader_.use();
+
+        glm::vec3 exhaustPos = glm::vec3(car_.carModel * glm::vec4(2.0f, 0.24f, -0.43f, 1.0f));
+        glm::vec3 exhaustDir = glm::normalize(glm::vec3(car_.carModel * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)));
+
+        // Envoi des uniforms au compute shader
+        glUniform1f(particleComputeShader_.timeULoc, totalTime);
+        glUniform1f(particleComputeShader_.deltaTimeULoc, deltaTime_);
+        glUniform3fv(particleComputeShader_.emitterPositionULoc, 1, glm::value_ptr(exhaustPos));
+        glUniform3fv(particleComputeShader_.emitterDirectionULoc, 1, glm::value_ptr(exhaustDir));
+
         // TODO: Configurer les buffers d'entrée et de sortie.
+        particles_[particleReadIdx_].setBindingIndex(0); // correspond au binding = 0 dans dataIn
+        particles_[particleWriteIdx_].setBindingIndex(1); // correspond au binding = 1 dans dataOut
         
         // TODO: Envois de la commande de calcul.
         //       Pas besoin d'optimiser le nombre de work group vs la taille local (dans le shader).
-        
+        GLuint numGroups = (MAX_PARTICLES_ + 63) / 64; 
+        glDispatchCompute(numGroups, 1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); 
         
         // Particles draw
         
@@ -991,8 +1033,44 @@ struct App : public OpenGLApplication
         //       Utiliser la texture et envoyer vos uniforms.
         //       Il sera nécessaire de spécifier les entrée en spécifiant le buffer d'entrée.
         //       Activer le blending et restaurer l'état du contexte modifié.
-        
+    
         // TODO: Interchanger les deux buffers, celui en entrée devient la sortie, et vice versa.
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDepthMask(GL_FALSE); // Désactiver l'écriture en profondeur
+            
+        particleDrawShader_.use();
+            
+        // Envoi des matrices. Les particules sont générées en espace monde (World Space) par le compute shader.
+        // Le model est donc la matrice identité, ce qui signifie que modelView = view.
+        glUniformMatrix4fv(particleDrawShader_.projectionULoc, 1, GL_FALSE, glm::value_ptr(proj));
+        glUniformMatrix4fv(particleDrawShader_.modelViewULoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniform1i(particleDrawShader_.textureSamplerULoc, 0);
+            
+        smokeTexture_.use();
+        glBindVertexArray(vaoParticles_);
+            
+        // On relie les données du buffer mis à jour
+        particles_[particleReadIdx_].bindAsArray();
+            
+        GLsizei stride = sizeof(Particle);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, position));
+        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, zOrientation));
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, velocity));
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, color));
+        glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, size));
+        glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, timeToLive));
+        glVertexAttribPointer(6, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, maxTimeToLive));
+            
+        glDrawArrays(GL_POINTS, 0, nParticles_);
+        glBindVertexArray(0);
+            
+        // Restaurer l'état
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
+            
+        // Interchanger les buffers pour la prochaine frame
+        std::swap(particleReadIdx_, particleWriteIdx_);
 
         // Sky box
         glDepthFunc(GL_LEQUAL);
@@ -1088,6 +1166,8 @@ private:
     // Partie 3
     // TODO: Attributs supplémentaires
     GLuint vaoParticles_;
+    int particleReadIdx_ = 0;
+    int particleWriteIdx_ = 1;
     
     float totalTime;
     float timerParticles_;
@@ -1096,8 +1176,12 @@ private:
     unsigned int nParticles_;    
     
     // TODO: Ajouter vos shaders
+    ParticleComputeShader particleComputeShader_;
+    ParticleDrawShader particleDrawShader_;
+
     // TODO: Ajouter la texture de fumé
-    
+    Texture2D smokeTexture_;
+
     // Ssbo
     ShaderStorageBuffer particles_[2];
     
