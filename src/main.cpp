@@ -249,8 +249,8 @@ struct App : public OpenGLApplication
         glBindVertexArray(vaoBezier_);
         glBindBuffer(GL_ARRAY_BUFFER, vboBezier_);
 
-        // Allocation de l'espace (Max 16 points internes + 2 extrémités par courbe = 18. Pour 5 courbes = 90 points environ)
-        const int maxPoints = 150; 
+        // Allocation de l'espace (Max 16 points internes + 2 extrémités par courbe = 18. Pour 5 courbes = 90 points)
+        const int maxPoints = 90; 
         glBufferData(GL_ARRAY_BUFFER, maxPoints * sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
 
         glEnableVertexAttribArray(0);
@@ -915,7 +915,7 @@ struct App : public OpenGLApplication
             else
             {
                 // Fin de l'animation : on réinitialise les variables
-                cameraAnimation = 0.f;
+                cameraAnimation = 0.0f;
                 isAnimatingCamera = false;
                 cameraMode = 0;
             }
@@ -933,9 +933,6 @@ struct App : public OpenGLApplication
             {
                 for (int j = 0; j <= nSegments; ++j) 
                 {
-                    // Éviter de dupliquer les points de jointure entre les 5 courbes
-                    if (i > 0 && j == 0) continue; 
-                    
                     float t = static_cast<float>(j) / static_cast<float>(nSegments);
                     bezierPoints.push_back(calculateBezier(curves[i], t));
                 }
