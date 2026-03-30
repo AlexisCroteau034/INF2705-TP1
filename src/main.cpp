@@ -337,7 +337,7 @@ struct App : public OpenGLApplication
         glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
-        glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
+        // glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
         
         edgeEffectShader_.create();
         celShadingShader_.create();
@@ -990,7 +990,6 @@ struct App : public OpenGLApplication
         glBindVertexArray(0);
 
         glEnable(GL_CULL_FACE);
-        
         
         // ...
         
