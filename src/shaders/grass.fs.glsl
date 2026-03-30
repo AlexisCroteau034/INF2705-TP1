@@ -6,7 +6,6 @@ in ATTRIBS_GS_OUT
     float heightRatio;
 } attribsIn;
 
-
 out vec4 FragColor;
 
 void main()
@@ -14,7 +13,7 @@ void main()
     const vec3 GRASS_COLOR = vec3(0.6, 0.86, 0.21); 
     
     // TODO: Faite un dégradé pour que la base du brin d'herbe soit plus foncé.
-    const vec3 BASE_COLOR = GRASS_COLOR * 0.3; // Base plus foncée[cite: 2]
+    const vec3 BASE_COLOR = GRASS_COLOR * 0.3; // Base plus foncée
     
     vec3 finalColor = mix(BASE_COLOR, GRASS_COLOR, attribsIn.heightRatio);
     FragColor = vec4(finalColor, 1.0);

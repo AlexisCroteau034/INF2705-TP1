@@ -51,19 +51,27 @@ void main()
     float currentHeight = baseHeight + r * varHeight;
     
     // Rotation aléatoire en Y
-    float angle = r * 6.28318; // [0, 2pi]
+    float angleY = r * 6.28318; // [0, 2pi]
     mat3 rotY = mat3(
-        cos(angle), 0.0, sin(angle),
+        cos(angleY), 0.0, sin(angleY),
         0.0, 1.0, 0.0,
-        -sin(angle), 0.0, cos(angle)
+        -sin(angleY), 0.0, cos(angleY)
+    );
+
+    // Rotation aléatoire en X [0, 0.1pi] pour plier le brin
+    float angleX = r * 0.314159; // 0.1 * pi (environ)
+    mat3 rotX = mat3(
+        1.0, 0.0, 0.0,
+        0.0, cos(angleX), -sin(angleX),
+        0.0, sin(angleX), cos(angleX)
     );
 
     // Points de base
     vec3 right = rotY * vec3(currentWidth, 0.0, 0.0);
     vec3 left = rotY * vec3(-currentWidth, 0.0, 0.0);
     
-    // Point du haut (légèrement décalé pour simuler la pliure en X demandée)
-    vec3 top = rotY * vec3(0.0, currentHeight, currentHeight * 0.2); 
+    // Point du haut (On applique la pliure en X, PUIS la rotation globale en Y)
+    vec3 top = rotY * rotX * vec3(0.0, currentHeight, 0.0); 
 
     // Émission du brin d'herbe (Triangle)[cite: 3]
     attribsOut.heightRatio = 0.0; // Base foncée
