@@ -119,7 +119,6 @@ Material windowMat =
     2.0f
 };
 
-// Partie 1
 Material bezierMat = 
 {
     {1.0f, 1.0f, 1.0f, 0.0f},
@@ -172,13 +171,11 @@ BezierCurve curves[5] =
 };
 
 
-// Partie 3
-// Ne pas modifier
 struct Particle
 {
     glm::vec3 position;
     GLfloat zOrientation;
-    glm::vec4 velocity; // vec3, but padded
+    glm::vec4 velocity;
     glm::vec4 color;
     glm::vec2 size; 
     GLfloat timeToLive;
@@ -238,23 +235,16 @@ struct App : public OpenGLApplication
 			"Espace : activer/désactiver la souris." "\n"
 		);
 
-        // TODO: Création des nouveaux shaders
-        
-        // Partie 1-2
-        // TODO: Initialisation des meshes (béziers, patches)
-        // Initialisation de la Spline Bézier
         glGenVertexArrays(1, &vaoBezier_);
         glGenBuffers(1, &vboBezier_);
         
         glBindVertexArray(vaoBezier_);
         glBindBuffer(GL_ARRAY_BUFFER, vboBezier_);
 
-        // Allocation de l'espace (Max 16 points internes + 2 extrémités par courbe = 18. Pour 5 courbes = 90 points)
         const int maxPoints = 90; 
         glBufferData(GL_ARRAY_BUFFER, maxPoints * sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
 
         glEnableVertexAttribArray(0);
-        // Position attribut (location = 0)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 
         glBindVertexArray(0);
@@ -265,8 +255,8 @@ struct App : public OpenGLApplication
         glBindBuffer(GL_ARRAY_BUFFER, vboGrass_);
 
         std::vector<glm::vec3> patchVertices;
-        const float size = 35.0f; // Taille correspondant au sol
-        const int divisions = 6; // Plus il y a de divisions, plus le calcul de distance est précis
+        const float size = 35.0f;
+        const int divisions = 6;
         const float step = size / divisions;
 
         for(int i = 0; i < divisions; i++) {
@@ -274,12 +264,12 @@ struct App : public OpenGLApplication
                 float x = -size / 2.0f + i * step;
                 float z = -size / 2.0f + j * step;
 
-                // Premier triangle du carré
+                // Triangle 1
                 patchVertices.push_back(glm::vec3(x, 0, z));
                 patchVertices.push_back(glm::vec3(x + step, 0, z));
                 patchVertices.push_back(glm::vec3(x, 0, z + step));
             
-                // Deuxième triangle du carré
+                // Triangle 2
                 patchVertices.push_back(glm::vec3(x + step, 0, z));
                 patchVertices.push_back(glm::vec3(x + step, 0, z + step));
                 patchVertices.push_back(glm::vec3(x, 0, z + step));
@@ -292,18 +282,10 @@ struct App : public OpenGLApplication
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
         glBindVertexArray(0);
         
-        // Partie 3
-        // TODO: Allocation des SSBO.
-        //       Allouer suffisament d'espace pour le nombre maximal de particules.
-        //       Seulement le buffer en entrée à besoin d'être initialisé à 0.
-        //       Réfléchisser au type d'usage.
-
-        std::vector<Particle> initialParticles(MAX_PARTICLES_, Particle{}); // Initialise avec des 0
+        std::vector<Particle> initialParticles(MAX_PARTICLES_, Particle{});
         particles_[0].allocate(initialParticles.data(), MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_DRAW);
-        // Le deuxième buffer n'a pas besoin de données initiales, juste de l'espace alloué
         particles_[1].allocate(nullptr, MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_DRAW);
         
-        // TODO: Créer un vao pour le dessin des particules et activer les attributs nécessaires.
         glGenVertexArrays(1, &vaoParticles_);
         glBindVertexArray(vaoParticles_);
         particles_[0].bindAsArray();
@@ -325,11 +307,9 @@ struct App : public OpenGLApplication
         glVertexAttribPointer(6, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Particle, maxTimeToLive));
         glBindVertexArray(0);
 
-        // TODO: Création des nouveaux shaders.
         particleComputeShader_.create();
         particleDrawShader_.create(); 
         
-        // TODO: Initialisation de la nouvelle texture pour les particules.
         smokeTexture_.load("../textures/smoke.png");
         smokeTexture_.setWrap(GL_CLAMP_TO_EDGE);
         smokeTexture_.setFiltering(GL_LINEAR);
@@ -337,7 +317,6 @@ struct App : public OpenGLApplication
         glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
-        // glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
         
         edgeEffectShader_.create();
         celShadingShader_.create();
@@ -463,16 +442,12 @@ struct App : public OpenGLApplication
 
 	void drawFrame() override
 	{
-        // TODO: Au besoin, ajouter la recharge de vos nouveaux shaders
-        //       après if (ImGui::Button("Reload Shaders")).
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         
         ImGui::Begin("Scene Parameters");
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
         if (ImGui::Button("Reload Shaders"))
         {
-            // Recompilation de tous les shaders
             particleComputeShader_.create();
             particleDrawShader_.create(); 
             edgeEffectShader_.create();
@@ -480,8 +455,6 @@ struct App : public OpenGLApplication
             skyShader_.create();
             grassShader_.create();
             
-            // On réapplique les configurations d'éclairage statiques 
-            // au cas où les locations d'uniforms auraient changé.
             setLightingUniform();
         }
         
@@ -850,8 +823,6 @@ struct App : public OpenGLApplication
         float fov = glm::radians(70.0f);
         float aspect = getWindowAspect();
         float near = 0.1f;
-
-        // TODO: Pertinent de modifier la distance ici.
         float far = 300.0f;
         
         return glm::perspective(fov, aspect, near, far);
@@ -910,26 +881,21 @@ struct App : public OpenGLApplication
         {
             if (cameraAnimation < 5)
             {
-                // 1. Trouver sur quelle courbe on se trouve (0 à 4)
                 int curveIndex = glm::clamp(static_cast<int>(floor(cameraAnimation)), 0, 4);
                 float t = cameraAnimation - static_cast<float>(curveIndex);
 
-                // 2. Déplacer la caméra sur la spline
                 cameraPosition_ = calculateBezier(curves[curveIndex], t);
 
-                // 3. ORIENTER la caméra vers la voiture À CHAQUE FRAME
                 glm::vec3 distance = car_.position - cameraPosition_;               
                 float horizontalDistance = sqrt(distance.x * distance.x + distance.z * distance.z);
 
                 cameraOrientation_.y = atan2(-distance.x, -distance.z);
                 cameraOrientation_.x = atan2(distance.y, horizontalDistance);
-            
-                // 4. Avancer l'animation
+
                 cameraAnimation += deltaTime_ / 3.0;
             }
             else
             {
-                // Fin de l'animation : on réinitialise les variables
                 cameraAnimation = 0.0f;
                 isAnimatingCamera = false;
                 cameraMode = 0;
@@ -960,8 +926,7 @@ struct App : public OpenGLApplication
             glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
 
-        // TODO: Dessin de la courbe
-        // glDraw...
+        // Dessin bezier
         celShadingShader_.use();
         setMaterial(bezierMat);
         
@@ -973,9 +938,7 @@ struct App : public OpenGLApplication
         glDrawArrays(GL_LINE_STRIP, 0, numBezierVerts_);
         glBindVertexArray(0);
         
-        
-        // TODO: Dessin du gazon
-        // glDraw...
+        // Dessin grass
         glm::mat4 groundModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
 
         grassShader_.use();
@@ -991,12 +954,7 @@ struct App : public OpenGLApplication
 
         glEnable(GL_CULL_FACE);
         
-        // ...
-        
-        // Partie 3
-        // TODO: Attention à l'endroit où vous faites votre dessin, la texture des particules est transparente.
-        
-        // Particles    
+        // Update particles
         totalTime += deltaTime_;
         timerParticles_ += deltaTime_;        
         const float particlesSpawnInterval = 0.2f;
@@ -1007,28 +965,19 @@ struct App : public OpenGLApplication
         nParticles_ += particlesToAdd;
         if (nParticles_ > MAX_PARTICLES_) nParticles_ = MAX_PARTICLES_;
 
-        // Particles update
-        
-        // TODO: Mise à jour des données à l'aide du compute shader
-        //       Envoyer vos uniforms.
-        
         particleComputeShader_.use();
 
         glm::vec3 exhaustPos = glm::vec3(car_.carModel * glm::vec4(2.0f, 0.24f, -0.43f, 1.0f));
         glm::vec3 exhaustDir = glm::normalize(glm::vec3(car_.carModel * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)));
 
-        // Envoi des uniforms au compute shader
         glUniform1f(particleComputeShader_.timeULoc, totalTime);
         glUniform1f(particleComputeShader_.deltaTimeULoc, deltaTime_);
         glUniform3fv(particleComputeShader_.emitterPositionULoc, 1, glm::value_ptr(exhaustPos));
         glUniform3fv(particleComputeShader_.emitterDirectionULoc, 1, glm::value_ptr(exhaustDir));
 
-        // TODO: Configurer les buffers d'entrée et de sortie.
-        particles_[particleReadIdx_].setBindingIndex(0); // correspond au binding = 0 dans dataIn
-        particles_[particleWriteIdx_].setBindingIndex(1); // correspond au binding = 1 dans dataOut
+        particles_[particleReadIdx_].setBindingIndex(0);
+        particles_[particleWriteIdx_].setBindingIndex(1);
         
-        // TODO: Envois de la commande de calcul.
-        //       Pas besoin d'optimiser le nombre de work group vs la taille local (dans le shader).
         glDispatchCompute(1, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); 
         
@@ -1100,22 +1049,13 @@ struct App : public OpenGLApplication
         carWindowTexture_.use();
         car_.drawWindows(projView, view);
 
-        // Particles draw
-        
-        // TODO: Dessin des particules. Utiliser le nombre de particules actuellement utilisées.
-        //       Utiliser la texture et envoyer vos uniforms.
-        //       Il sera nécessaire de spécifier les entrée en spécifiant le buffer d'entrée.
-        //       Activer le blending et restaurer l'état du contexte modifié.
-    
-        // TODO: Interchanger les deux buffers, celui en entrée devient la sortie, et vice versa.
+        // Dessin particles
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glDepthMask(GL_FALSE); // Désactiver l'écriture en profondeur
+        glDepthMask(GL_FALSE);
             
         particleDrawShader_.use();
             
-        // Envoi des matrices. Les particules sont générées en espace monde (World Space) par le compute shader.
-        // Le model est donc la matrice identité, ce qui signifie que modelView = view.
         glUniformMatrix4fv(particleDrawShader_.projectionULoc, 1, GL_FALSE, glm::value_ptr(proj));
         glUniformMatrix4fv(particleDrawShader_.modelViewULoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniform1i(particleDrawShader_.textureSamplerULoc, 0);
@@ -1123,7 +1063,6 @@ struct App : public OpenGLApplication
         smokeTexture_.use();
         glBindVertexArray(vaoParticles_);
             
-        // On relie les données du buffer mis à jour
         particles_[particleReadIdx_].bindAsArray();
             
         GLsizei stride = sizeof(Particle);
@@ -1138,11 +1077,9 @@ struct App : public OpenGLApplication
         glDrawArrays(GL_POINTS, 0, nParticles_);
         glBindVertexArray(0);
             
-        // Restaurer l'état
         glDepthMask(GL_TRUE);
         glDisable(GL_BLEND);
             
-        // Interchanger les buffers pour la prochaine frame
         std::swap(particleReadIdx_, particleWriteIdx_);
     }
  
@@ -1150,15 +1087,13 @@ private:
     
     Car car_;
 
-    unsigned int bezierNPoints = 3; // Nombre de points supplémentaires sur la courbe, 0 est une ligne droite
+    unsigned int bezierNPoints = 3;
     unsigned int oldBezierNPoints = 0;
     
     int cameraMode = 0;
     float cameraAnimation = 0.f;
     bool isAnimatingCamera = false;
 
-    // Partie 1-2
-    // TODO: Ajouter les attributs de vbo, ebo, vao nécessaire
     GLuint vaoBezier_ = 0;
     GLuint vboBezier_ = 0;
     int numBezierVerts_ = 0;
@@ -1168,8 +1103,6 @@ private:
     int numGrassVerts_ = 0;
     
     
-    // Partie 3
-    // TODO: Attributs supplémentaires
     GLuint vaoParticles_;
     int particleReadIdx_ = 0;
     int particleWriteIdx_ = 1;
@@ -1180,17 +1113,13 @@ private:
     static const unsigned int MAX_PARTICLES_ = 64;
     unsigned int nParticles_;    
     
-    // TODO: Ajouter vos shaders
     ParticleComputeShader particleComputeShader_;
     ParticleDrawShader particleDrawShader_;
 
-    // TODO: Ajouter la texture de fumé
     Texture2D smokeTexture_;
 
-    // Ssbo
     ShaderStorageBuffer particles_[2];
     
-    // Matrices statiques
     static constexpr unsigned int N_STREET_PATCHES = 7*4+4;
     glm::mat4 treeModelMatrice_;
     glm::mat4 groundModelMatrice_;
