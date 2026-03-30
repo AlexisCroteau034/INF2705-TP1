@@ -1005,18 +1005,13 @@ struct App : public OpenGLApplication
         timerParticles_ -= particlesToAdd * particlesSpawnInterval;
         
         nParticles_ += particlesToAdd;
-        if (nParticles_ > MAX_PARTICLES_)
-            nParticles_ = MAX_PARTICLES_;
+        if (nParticles_ > MAX_PARTICLES_) nParticles_ = MAX_PARTICLES_;
 
         // Particles update
         
         // TODO: Mise à jour des données à l'aide du compute shader
         //       Envoyer vos uniforms.
         
-        // Utiliser car_.carModel pour calculer la nouvelle position et direction d'émission de particule.
-        // glm::vec3 exhaustPos = vec3(2.0, 0.24, -0.43);
-        // glm::vec3 exhaustDir = vec3(1, 0, 0);
-
         particleComputeShader_.use();
 
         glm::vec3 exhaustPos = glm::vec3(car_.carModel * glm::vec4(2.0f, 0.24f, -0.43f, 1.0f));
@@ -1034,8 +1029,7 @@ struct App : public OpenGLApplication
         
         // TODO: Envois de la commande de calcul.
         //       Pas besoin d'optimiser le nombre de work group vs la taille local (dans le shader).
-        GLuint numGroups = (MAX_PARTICLES_ + 63) / 64; 
-        glDispatchCompute(numGroups, 1, 1);
+        glDispatchCompute(1, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); 
         
         // Sky box

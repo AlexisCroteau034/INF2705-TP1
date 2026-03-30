@@ -62,8 +62,6 @@ void main()
     // Récupérer la particule courante depuis le buffer d'entrée
     Particle p = dataIn.particles[index];
     
-    // Réduire le temps de vie
-    p.timeToLive -= deltaTime;
     
     // Vérifier si la particule est "morte" et nécessite une réinitialisation
     if (p.timeToLive <= 0.0)
@@ -90,6 +88,9 @@ void main()
     else
     {
         // Mise à jour de la particule
+
+        // Réduire le temps de vie
+        p.timeToLive -= deltaTime;
         
         // Méthode d'Euler pour la position
         p.position += p.velocity * deltaTime;
