@@ -470,6 +470,21 @@ struct App : public OpenGLApplication
         
         ImGui::Begin("Scene Parameters");
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
+        if (ImGui::Button("Reload Shaders"))
+        {
+            // Recompilation de tous les shaders
+            particleComputeShader_.create();
+            particleDrawShader_.create(); 
+            edgeEffectShader_.create();
+            celShadingShader_.create();
+            skyShader_.create();
+            grassShader_.create();
+            
+            // On réapplique les configurations d'éclairage statiques 
+            // au cas où les locations d'uniforms auraient changé.
+            setLightingUniform();
+        }
+        
         ImGui::End();
         
         sceneMain();
